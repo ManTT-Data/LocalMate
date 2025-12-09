@@ -1,0 +1,159 @@
+"""Tests for internal services and utilities."""
+
+import pytest
+from app.shared.utils.geo_utils import haversine_distance, bounding_box
+from app.shared.graph.tsp_solver import nearest_neighbor_tsp, optimize_route
+from app.shared.integrations.mcp.grab_transport_tool import GrabTransportTool
+from app.shared.integrations.mcp.base_tool import ToolStatus
+
+
+class TestGeoUtils:
+    """Test geographic utility functions."""
+
+    def test_haversine_same_point(self):
+        """Distance between same point should be 0."""
+        point = (16.0544, 108.2480)
+        distance = haversine_distance(point, point)
+        assert distance == 0.0
+
+    def test_haversine_known_distance(self):
+        """Test with known distance between two points."""
+        # My Khe Beach to Dragon Bridge (~2km)
+        my_khe = (16.0544, 108.2480)
+        dragon_bridge = (16.0611, 108.2272)
+        distance = haversine_distance(my_khe, dragon_bridge)
+        # Should be approximately 2km
+        assert 1.5 < distance < 3.0
+
+    def test_haversine_symmetry(self):
+        """Distance should be same in both directions."""
+        point1 = (16.0544, 108.2480)
+        point2 = (16.0611, 108.2272)
+        d1 = haversine_distance(point1, point2)
+        d2 = haversine_distance(point2, point1)
+        assert d1 == d2
+
+    def test_bounding_box_returns_tuple(self):
+        """Bounding box should return 4 coordinates."""
+        result = bounding_box(16.05, 108.22, 5.0)
+        assert len(result) == 4
+        min_lat, min_lng, max_lat, max_lng = result
+        assert min_lat < 16.05 < max_lat
+        assert min_lng < 108.22 < max_lng
+
+
+class TestTSPSolver:
+    """Test TSP optimization functions."""
+
+    @pytest.mark.asyncio
+    async def test_tsp_single_point(self):
+        """TSP with single point should return [0]."""
+        points = [(16.05, 108.22)]
+        order = await nearest_neighbor_tsp(points)
+        assert order == [0]
+
+    @pytest.mark.asyncio
+    async def test_tsp_two_points(self):
+        """TSP with two points should return [0, 1]."""
+        points = [(16.05, 108.22), (16.06, 108.23)]
+        order = await nearest_neighbor_tsp(points)
+        assert order == [0, 1]
+
+    @pytest.mark.asyncio
+    async def test_tsp_returns_all_indices(self):
+        """TSP should visit all points."""
+        points = [
+            (16.05, 108.22),
+            (16.06, 108.23),
+            (16.07, 108.24),
+        ]
+        order = await nearest_neighbor_tsp(points)
+        assert len(order) == 3
+        assert set(order) == {0, 1, 2}
+
+    @pytest.mark.asyncio
+    async def test_optimize_route_empty(self):
+        """Optimize route with empty list should return []."""
+        order = await optimize_route([])
+        assert order == []
+
+
+class TestGrabTransportTool:
+    """Test Grab transport MCP tool."""
+
+    @pytest.fixture
+    def tool(self):
+        return GrabTransportTool()
+
+    def test_tool_name(self, tool):
+        """Tool should have correct name."""
+        assert tool.name == "grab_transport"
+
+    def test_tool_has_description(self, tool):
+        """Tool should have description."""
+        assert len(tool.description) > 0
+
+    def test_tool_spec_has_parameters(self, tool):
+        """Tool spec should have parameters."""
+        spec = tool.get_tool_spec()
+        assert "name" in spec
+        assert "parameters" in spec
+        assert "properties" in spec["parameters"]
+
+    @pytest.mark.asyncio
+    async def test_validate_params_missing_field(self, tool):
+        """Validation should fail for missing fields."""
+        is_valid, error = await tool.validate_params({})
+        assert is_valid is False
+        assert "Missing" in error
+
+    @pytest.mark.asyncio
+    async def test_validate_params_valid(self, tool):
+        """Validation should pass for valid params."""
+        is_valid, error = await tool.validate_params({
+            "from_lat": 16.05,
+            "from_lng": 108.22,
+            "to_lat": 16.06,
+            "to_lng": 108.23,
+        })
+        assert is_valid is True
+        assert error is None
+
+    @pytest.mark.asyncio
+    async def test_estimate_ride(self, tool):
+        """Ride estimate should return valid data."""
+        estimate = await tool.estimate_ride(
+            from_lat=16.05,
+            from_lng=108.22,
+            to_lat=16.06,
+            to_lng=108.23,
+        )
+        assert estimate.provider == "grab"
+        assert estimate.price_min > 0
+        assert estimate.price_max >= estimate.price_min
+        assert estimate.duration_minutes > 0
+        assert estimate.distance_km > 0
+
+    @pytest.mark.asyncio
+    async def test_execute_success(self, tool):
+        """Execute should return success with valid params."""
+        result = await tool.execute({
+            "from_lat": 16.05,
+            "from_lng": 108.22,
+            "to_lat": 16.06,
+            "to_lng": 108.23,
+        })
+        assert result.status == ToolStatus.SUCCESS
+        assert result.data is not None
+        assert "estimate_price" in result.data
+
+    @pytest.mark.asyncio
+    async def test_execute_failure_invalid_coords(self, tool):
+        """Execute should fail with invalid coordinates."""
+        result = await tool.execute({
+            "from_lat": 0,  # Not in Da Nang
+            "from_lng": 0,
+            "to_lat": 0,
+            "to_lng": 0,
+        })
+        assert result.status == ToolStatus.FAILED
