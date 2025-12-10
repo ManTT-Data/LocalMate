@@ -99,45 +99,29 @@ class TestGrabTransportTool:
         assert "name" in spec
         assert "parameters" in spec
         assert "properties" in spec["parameters"]
+        assert "action" in spec["parameters"]["properties"]
 
     @pytest.mark.asyncio
-    async def test_validate_params_missing_field(self, tool):
-        """Validation should fail for missing fields."""
-        is_valid, error = await tool.validate_params({})
-        assert is_valid is False
-        assert "Missing" in error
-
-    @pytest.mark.asyncio
-    async def test_validate_params_valid(self, tool):
-        """Validation should pass for valid params."""
-        is_valid, error = await tool.validate_params({
-            "from_lat": 16.05,
-            "from_lng": 108.22,
-            "to_lat": 16.06,
-            "to_lng": 108.23,
-        })
-        assert is_valid is True
-        assert error is None
-
-    @pytest.mark.asyncio
-    async def test_estimate_ride(self, tool):
-        """Ride estimate should return valid data."""
-        estimate = await tool.estimate_ride(
+    async def test_book_ride(self, tool):
+        """Book ride should return booking result."""
+        result = await tool.book_ride(
             from_lat=16.05,
             from_lng=108.22,
+            from_name="Điểm A",
             to_lat=16.06,
             to_lng=108.23,
+            to_name="Điểm B",
         )
-        assert estimate.provider == "grab"
-        assert estimate.price_min > 0
-        assert estimate.price_max >= estimate.price_min
-        assert estimate.duration_minutes > 0
-        assert estimate.distance_km > 0
+        assert result.provider == "grab"
+        assert result.booking_id.startswith("GRAB-")
+        assert result.status == "pending"
+        assert "₫" in result.estimated_price
 
     @pytest.mark.asyncio
-    async def test_execute_success(self, tool):
-        """Execute should return success with valid params."""
+    async def test_execute_book_success(self, tool):
+        """Execute book should return success."""
         result = await tool.execute({
+            "action": "book",
             "from_lat": 16.05,
             "from_lng": 108.22,
             "to_lat": 16.06,
@@ -145,15 +129,29 @@ class TestGrabTransportTool:
         })
         assert result.status == ToolStatus.SUCCESS
         assert result.data is not None
-        assert "estimate_price" in result.data
+        assert "booking_id" in result.data
 
     @pytest.mark.asyncio
-    async def test_execute_failure_invalid_coords(self, tool):
-        """Execute should fail with invalid coordinates."""
+    async def test_execute_estimate_success(self, tool):
+        """Execute estimate should return success."""
         result = await tool.execute({
-            "from_lat": 0,  # Not in Da Nang
-            "from_lng": 0,
-            "to_lat": 0,
-            "to_lng": 0,
+            "action": "estimate",
+            "from_lat": 16.05,
+            "from_lng": 108.22,
+            "to_lat": 16.06,
+            "to_lng": 108.23,
+        })
+        assert result.status == ToolStatus.SUCCESS
+        assert result.data is not None
+        assert "distance_km" in result.data
+
+    @pytest.mark.asyncio
+    async def test_execute_failure_missing_field(self, tool):
+        """Execute should fail with missing fields."""
+        result = await tool.execute({
+            "action": "book",
+            "from_lat": 16.05,
+            # Missing other required fields
         })
         assert result.status == ToolStatus.FAILED
+        assert "Missing" in result.error

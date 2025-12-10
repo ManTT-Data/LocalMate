@@ -15,8 +15,8 @@ class ItineraryPlanRequest(BaseModel):
         default=None,
         description="List of interests, e.g. ['beach', 'seafood', 'coffee']",
     )
-    budget: str | None = Field(
-        default=None,
+    budget: str = Field(
+        default="medium",
         description="Budget level: 'low', 'medium', 'high'",
     )
     start_date: date | None = Field(default=None, description="Trip start date")

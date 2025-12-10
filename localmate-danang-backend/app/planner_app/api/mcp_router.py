@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
-from app.planner_app.schemas.action_schemas import SuggestedAction, SuggestedActionsResponse
+from app.planner_app.schemas.action_schemas import SuggestedActionsResponse
 from app.planner_app.services.itinerary_service import itinerary_service
 from app.shared.db.session import get_db
 from app.shared.integrations.mcp.mcp_service import mcp_service
@@ -102,40 +102,4 @@ async def get_itinerary_actions(
     return SuggestedActionsResponse(
         itinerary_id=itinerary_id,
         actions=actions,
-    )
-
-
-class RideEstimateRequest(BaseModel):
-    """Request for ride estimate."""
-
-    from_lat: float
-    from_lng: float
-    to_lat: float
-    to_lng: float
-    ride_type: str = "GrabCar"
-
-
-@router.post("/ride/estimate")
-async def estimate_ride(
-    request: RideEstimateRequest,
-    _: dict = Depends(get_current_user),
-):
-    """
-    Get a ride estimate between two points.
-
-    - **from_lat, from_lng**: Pickup coordinates
-    - **to_lat, to_lng**: Dropoff coordinates
-    - **ride_type**: GrabCar, GrabBike, or GrabCar Plus
-    """
-    result = await mcp_service.execute_tool(
-        "grab_transport",
-        request.model_dump(),
-    )
-
-    if result and result.data:
-        return result.data
-
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=result.error if result else "Failed to estimate ride",
     )

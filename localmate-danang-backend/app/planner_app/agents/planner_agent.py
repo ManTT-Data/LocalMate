@@ -1,11 +1,11 @@
-"""Planner Agent - generates itinerary plans with LLM and RAG."""
+"""Planner Agent - generates itinerary plans using Semantic Search + TSP."""
 
 from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.planner_app.schemas.itinerary_schemas import ItineraryPlanRequest
-from app.shared.graph.place_graph_service import PlaceGraphService, place_graph_service
+from app.shared.constants.prompts.planner_prompts import ITINERARY_TITLE_PROMPT
 from app.shared.graph.rag_pipeline import RAGPipeline, rag_pipeline
 from app.shared.graph.tsp_solver import optimize_route
 from app.shared.integrations.gemini_client import GeminiClient, gemini_client
@@ -37,18 +37,18 @@ class PlannerAgent:
     """
     Agent for creating itinerary plans.
 
-    Uses RAG pipeline for intelligent place selection
-    and TSP for route optimization.
+    Flow:
+    1. Use Semantic Search to select places by interests
+    3. Optimize route using TSP
+    4. Generate title with LLM
     """
 
     def __init__(
         self,
-        graph_service: PlaceGraphService | None = None,
         rag: RAGPipeline | None = None,
         llm: GeminiClient | None = None,
     ):
         """Initialize with optional service overrides."""
-        self._graph_service = graph_service or place_graph_service
         self._rag = rag or rag_pipeline
         self._llm = llm or gemini_client
 
@@ -61,62 +61,45 @@ class PlannerAgent:
         Create an itinerary plan based on user request.
 
         Flow:
-        1. Use RAG to find relevant places (if db available)
-        2. Fallback to Neo4j if RAG not available
+        1. Semantic Search for places matching interests
         3. Optimize route using TSP
         4. Generate title with LLM
         5. Distribute across days
 
         Args:
             request: User's planning request
-            db: Optional database session for RAG
+            db: Optional database session for semantic search
 
         Returns:
             PlannerItineraryResult with optimized stops
         """
         places = []
-        use_rag = db is not None and request.interests
 
-        # 1. Try RAG search first
-        if use_rag:
-            try:
-                query = " ".join(request.interests or [])
-                rag_results = await self._rag.search(
-                    db,
-                    query=query,
-                    limit=request.duration_days * 3,
-                )
-                places = [
-                    type(
-                        "Place",
-                        (),
-                        {
-                            "place_id": r.place_id,
-                            "name": r.name,
-                            "lat": r.lat,
-                            "lng": r.lng,
-                            "category": r.category,
-                            "rating": r.rating,
-                        },
-                    )()
-                    for r in rag_results
-                ]
-            except Exception:
-                pass  # Fall through to other methods
-
-        # 2. Fallback to Neo4j
-        if not places and request.interests:
-            places = await self._graph_service.find_places_by_interests(
-                interests=request.interests,
+        # 1. Semantic Search for places matching interests
+        if db is not None and request.interests:
+            query = " ".join(request.interests)
+            rag_results = await self._rag.search_by_preferences(
+                db,
+                query=query,
                 limit=request.duration_days * 3,
-                min_rating=3.5,
             )
+            places = [
+                type("Place", (), {
+                    "place_id": r.place_id,
+                    "name": r.name,
+                    "lat": r.lat,
+                    "lng": r.lng,
+                    "category": r.category,
+                    "rating": r.rating,
+                })()
+                for r in rag_results
+            ]
 
-        # 3. Fallback to dummy data
+        # Fallback to dummy data if no places found
         if not places:
             return await self._create_dummy_itinerary(request)
 
-        # 4. Optimize route using TSP
+        # 3. Optimize route using TSP
         points = [(p.lat, p.lng) for p in places]
         optimized_order = await optimize_route(
             points,
@@ -124,16 +107,18 @@ class PlannerAgent:
             start_lng=request.start_location_lng,
         )
 
-        # 5. Generate title with LLM
+        # 4. Generate title with LLM
         try:
-            title = await self._llm.generate_itinerary_title(
+            prompt = ITINERARY_TITLE_PROMPT.format(
                 duration_days=request.duration_days,
-                interests=request.interests,
+                interests=", ".join(request.interests) if request.interests else "khám phá",
             )
+            title = await self._llm.generate(prompt, temperature=0.8)
+            title = title.strip().strip('"')
         except Exception:
             title = f"Khám phá Đà Nẵng {request.duration_days} ngày"
 
-        # 6. Create stops with optimized order
+        # 5. Create stops with optimized order
         stops = []
         places_per_day = max(1, len(optimized_order) // request.duration_days)
 
@@ -153,6 +138,8 @@ class PlannerAgent:
                         "name": place.name,
                         "category": place.category,
                         "rating": getattr(place, "rating", None),
+                        "lat": place.lat,
+                        "lng": place.lng,
                     },
                 )
             )
@@ -171,46 +158,46 @@ class PlannerAgent:
         """Fallback: Create itinerary with dummy data."""
         dummy_places = [
             {
-                "place_id": "my-khe-beach",
+                "place_id": "danang_dragon_bridge",
+                "lat": 16.0611,
+                "lng": 108.2272,
+                "name": "Cầu Rồng",
+                "category": "landmark",
+            },
+            {
+                "place_id": "danang_my_khe_beach",
                 "lat": 16.0544,
-                "lng": 108.2480,
+                "lng": 108.2452,
                 "name": "Bãi biển Mỹ Khê",
                 "category": "beach",
             },
             {
-                "place_id": "be-man-seafood",
-                "lat": 16.0512,
-                "lng": 108.2465,
-                "name": "Nhà hàng Bé Mặn",
-                "category": "restaurant",
+                "place_id": "danang_bana_hills",
+                "lat": 15.9977,
+                "lng": 107.9875,
+                "name": "Bà Nà Hills",
+                "category": "attraction",
             },
             {
-                "place_id": "son-tra-peninsula",
-                "lat": 16.1167,
-                "lng": 108.2667,
-                "name": "Bán đảo Sơn Trà",
-                "category": "nature",
-            },
-            {
-                "place_id": "marble-mountains",
+                "place_id": "marble_mountains",
                 "lat": 16.0034,
                 "lng": 108.2628,
                 "name": "Ngũ Hành Sơn",
                 "category": "landmark",
             },
             {
-                "place_id": "han-river-bridge",
-                "lat": 16.0726,
-                "lng": 108.2269,
-                "name": "Cầu Sông Hàn",
-                "category": "landmark",
+                "place_id": "han_market",
+                "lat": 16.0678,
+                "lng": 108.2240,
+                "name": "Chợ Hàn",
+                "category": "market",
             },
         ]
 
         num_places = min(len(dummy_places), request.duration_days + 2)
         selected = dummy_places[:num_places]
 
-        # Optimize even dummy data
+        # Optimize route
         points = [(p["lat"], p["lng"]) for p in selected]
         order = await optimize_route(
             points,
@@ -234,6 +221,8 @@ class PlannerAgent:
                     snapshot={
                         "name": place["name"],
                         "category": place["category"],
+                        "lat": place["lat"],
+                        "lng": place["lng"],
                     },
                 )
             )

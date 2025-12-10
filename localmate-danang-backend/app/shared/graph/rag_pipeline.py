@@ -1,4 +1,4 @@
-"""RAG Pipeline - combines LLM, embeddings, and graph for intelligent search."""
+"""RAG Pipeline - Semantic Search for preferences + Graph for optimization."""
 
 from dataclasses import dataclass
 
@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.graph.place_graph_service import PlaceGraphService, PlaceResult, place_graph_service
 from app.shared.graph.semantic_search import SemanticSearchService, semantic_search_service
-from app.shared.integrations.gemini_client import GeminiClient, gemini_client
 
 
 @dataclass
@@ -27,102 +26,155 @@ class RAGPipeline:
     """
     RAG Pipeline for intelligent place search.
 
-    Flow:
-    1. Parse user intent with LLM
-    2. Semantic search in pgvector
-    3. Graph search in Neo4j
-    4. Combine and rank results
+    Search Flow:
+    1. Semantic Search: Select places matching user preferences
+    2. Graph (Neo4j): Pick optimal places nearby (for route optimization)
     """
 
     def __init__(
         self,
-        llm: GeminiClient | None = None,
         graph_service: PlaceGraphService | None = None,
         search_service: SemanticSearchService | None = None,
     ):
         """Initialize with optional service overrides."""
-        self._llm = llm or gemini_client
         self._graph = graph_service or place_graph_service
         self._search = search_service or semantic_search_service
 
-    async def search(
+    async def search_by_preferences(
         self,
         db: AsyncSession,
         query: str,
         limit: int = 10,
     ) -> list[RAGSearchResult]:
         """
-        Search places using RAG pipeline.
+        Step 1: Semantic Search to select places by user preferences.
+
+        Uses pgvector embeddings to find places matching the query.
 
         Args:
             db: Database session
-            query: Natural language query
+            query: Natural language query (e.g., "beach seafood view")
             limit: Maximum results
 
         Returns:
-            List of search results ranked by relevance
+            List of places matching preferences
         """
-        # 1. Parse intent
-        intent = await self._llm.parse_intent(query)
-        categories = intent.get("categories", [])
-        specialty = intent.get("specialty", [])
-        min_rating = intent.get("min_rating", 4.0)
-
-        # 2. Semantic search (if embeddings available)
-        semantic_results = []
         try:
             semantic_results = await self._search.search_by_text(
                 db, query, limit=limit, threshold=0.6
             )
-        except Exception:
-            pass  # Embeddings may not be set up yet
 
-        # 3. Graph search based on intent
-        graph_results = []
-        if categories or specialty:
-            interests = categories + specialty
-            graph_results = await self._graph.find_places_by_interests(
-                interests=interests,
-                limit=limit,
-                min_rating=min_rating,
-            )
-
-        # 4. Combine results
-        results_map: dict[str, RAGSearchResult] = {}
-
-        # Add graph results
-        for place in graph_results:
-            results_map[place.place_id] = RAGSearchResult(
-                place_id=place.place_id,
-                name=place.name,
-                lat=place.lat,
-                lng=place.lng,
-                category=place.category,
-                rating=place.rating,
-                description=place.description,
-                relevance_score=0.7,  # Base score for graph results
-            )
-
-        # Boost with semantic results
-        for sr in semantic_results:
-            if sr.place_id in results_map:
-                # Boost existing result
-                results_map[sr.place_id].relevance_score = max(
-                    results_map[sr.place_id].relevance_score,
-                    sr.similarity,
-                )
-            elif sr.metadata:
-                # Add from semantic search
-                results_map[sr.place_id] = RAGSearchResult(
+            return [
+                RAGSearchResult(
                     place_id=sr.place_id,
-                    name=sr.metadata.get("name", sr.place_id),
-                    lat=sr.metadata.get("lat", 0.0),
-                    lng=sr.metadata.get("lng", 0.0),
-                    category=sr.metadata.get("category", "unknown"),
-                    rating=sr.metadata.get("rating"),
-                    description=sr.metadata.get("description"),
+                    name=sr.metadata.get("name", sr.place_id) if sr.metadata else sr.place_id,
+                    lat=sr.metadata.get("lat", 0.0) if sr.metadata else 0.0,
+                    lng=sr.metadata.get("lng", 0.0) if sr.metadata else 0.0,
+                    category=sr.metadata.get("category", "unknown") if sr.metadata else "unknown",
+                    rating=sr.metadata.get("rating") if sr.metadata else None,
+                    description=sr.metadata.get("description") if sr.metadata else None,
                     relevance_score=sr.similarity,
                 )
+                for sr in semantic_results
+            ]
+        except Exception:
+            return []
+
+    async def optimize_with_graph(
+        self,
+        center_lat: float,
+        center_lng: float,
+        max_distance_km: float = 10.0,
+        category: str | None = None,
+        limit: int = 10,
+    ) -> list[RAGSearchResult]:
+        """
+        Step 2: Use Graph (Neo4j) to pick optimal nearby places.
+
+        Finds places near a center point for route optimization.
+
+        Args:
+            center_lat: Center latitude
+            center_lng: Center longitude
+            max_distance_km: Maximum distance from center
+            category: Optional category filter
+            limit: Maximum results
+
+        Returns:
+            List of nearby places ordered by distance
+        """
+        try:
+            graph_results = await self._graph.find_nearby_places(
+                lat=center_lat,
+                lng=center_lng,
+                max_distance_km=max_distance_km,
+                category=category,
+                limit=limit,
+            )
+
+            return [
+                RAGSearchResult(
+                    place_id=p.place_id,
+                    name=p.name,
+                    lat=p.lat,
+                    lng=p.lng,
+                    category=p.category,
+                    rating=p.rating,
+                    description=p.description,
+                    relevance_score=1.0 - (p.distance_km or 0) / max_distance_km,
+                )
+                for p in graph_results
+            ]
+        except Exception:
+            return []
+
+    async def search(
+        self,
+        db: AsyncSession,
+        query: str,
+        center_lat: float | None = None,
+        center_lng: float | None = None,
+        limit: int = 10,
+    ) -> list[RAGSearchResult]:
+        """
+        Combined search: Semantic + Graph optimization.
+
+        Flow:
+        1. Semantic Search to get places matching preferences
+        2. If center provided, also get nearby places from Graph
+        3. Combine and rank results
+
+        Args:
+            db: Database session
+            query: Search query
+            center_lat: Optional center for Graph search
+            center_lng: Optional center for Graph search
+            limit: Maximum results
+
+        Returns:
+            Combined and ranked results
+        """
+        results_map: dict[str, RAGSearchResult] = {}
+
+        # 1. Semantic Search
+        semantic_results = await self.search_by_preferences(db, query, limit=limit)
+        for r in semantic_results:
+            results_map[r.place_id] = r
+
+        # 2. Graph optimization (if center provided)
+        if center_lat is not None and center_lng is not None:
+            graph_results = await self.optimize_with_graph(
+                center_lat=center_lat,
+                center_lng=center_lng,
+                limit=limit,
+            )
+            for r in graph_results:
+                if r.place_id not in results_map:
+                    results_map[r.place_id] = r
+                else:
+                    # Boost score if found in both
+                    existing = results_map[r.place_id]
+                    existing.relevance_score = max(existing.relevance_score, r.relevance_score)
 
         # Sort by relevance
         results = sorted(
@@ -132,56 +184,6 @@ class RAGPipeline:
         )
 
         return results[:limit]
-
-    async def search_by_image(
-        self,
-        db: AsyncSession,
-        image_url: str,
-        limit: int = 10,
-    ) -> list[RAGSearchResult]:
-        """
-        Search places by image similarity.
-
-        Args:
-            db: Database session
-            image_url: URL of query image
-            limit: Maximum results
-
-        Returns:
-            List of search results
-        """
-        # Semantic image search
-        semantic_results = await self._search.search_by_image(
-            db, image_url, limit=limit, threshold=0.6
-        )
-
-        results = []
-        for sr in semantic_results:
-            if sr.metadata:
-                results.append(
-                    RAGSearchResult(
-                        place_id=sr.place_id,
-                        name=sr.metadata.get("name", sr.place_id),
-                        lat=sr.metadata.get("lat", 0.0),
-                        lng=sr.metadata.get("lng", 0.0),
-                        category=sr.metadata.get("category", "unknown"),
-                        rating=sr.metadata.get("rating"),
-                        description=sr.metadata.get("description"),
-                        relevance_score=sr.similarity,
-                    )
-                )
-
-        return results
-
-    async def generate_description(
-        self,
-        place: PlaceResult | RAGSearchResult,
-    ) -> str:
-        """Generate LLM description for a place."""
-        return await self._llm.generate_stop_description(
-            place_name=place.name if hasattr(place, 'name') else place.place_id,
-            category=place.category,
-        )
 
 
 # Singleton instance

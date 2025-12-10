@@ -1,21 +1,5 @@
 """Prompts for Planner Agent."""
 
-INTENT_PARSER_PROMPT = """Bạn là một AI parser cho ứng dụng du lịch Đà Nẵng.
-Phân tích query của người dùng và trích xuất thông tin có cấu trúc.
-
-Query: "{query}"
-
-Trả về JSON với format (chỉ trả về JSON):
-{{
-    "categories": ["restaurant", "beach", "cafe", "landmark", "nature"],
-    "specialty": ["seafood", "coffee", "view", ...],
-    "near": "tên địa điểm" hoặc null,
-    "min_rating": 4.0,
-    "budget": "low/medium/high" hoặc null,
-    "time_of_day": "morning/afternoon/evening/night" hoặc null,
-    "family_friendly": true/false
-}}"""
-
 ITINERARY_TITLE_PROMPT = """Tạo tiêu đề hấp dẫn cho lịch trình du lịch Đà Nẵng.
 
 Thông tin:
