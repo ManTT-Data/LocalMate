@@ -23,7 +23,7 @@ Trải nghiệm: Tất cả trong một chat — hỏi → lên lịch → đặ
 
 2. AI Guide Pack – Cho tài xế Grab
 
-Khi du khách đi theo lịch trình được AI tạo, tài xế sẽ nhận được một “gói hướng dẫn mini” tự động:
+Khi du khách đi theo lịch trình được AI tạo, tài xế sẽ nhận được một "gói hướng dẫn mini" tự động:
 
 Giới thiệu ngắn gọn về địa điểm
 
@@ -33,7 +33,7 @@ Góc chụp đẹp / giờ đông – giờ vắng
 
 Câu nói nhanh đa ngôn ngữ
 
-Gợi ý chia sẻ như một “local buddy”
+Gợi ý chia sẻ như một "local buddy"
 
 Mục tiêu: Biến tài xế thành một bạn đồng hành bản địa – tạo trải nghiệm du lịch sâu hơn, thân thiện hơn.
 
@@ -63,33 +63,32 @@ Tài xế được hỗ trợ nội dung để tạo cảm giác thân thiện m
 
   * Sắp xếp lộ trình hợp lý (TSP heuristic).
 
-  * Lưu itinerary vào **PostgreSQL**.
+  * Lưu itinerary vào **Supabase PostgreSQL**.
 
   * Cung cấp API để frontend hiển thị lại itinerary.
 
-* **Guide Pack Agent** cho tài xế chỉ là **phase sau**, hiện tại chỉ cần placeholder (không phải làm ngay).
+* **Guide Pack Agent** cho tài xế chỉ là **phase sau**, hiện tại chỉ cần placeholder.
 
 ### **0.2. Công nghệ & phiên bản**
 
-* **Ngôn ngữ**: Python 3.11+
+| Component | Technology | Version/Notes |
+|-----------|------------|---------------|
+| Ngôn ngữ | Python | 3.11+ |
+| Framework | FastAPI | Latest |
+| Database | **Supabase** | PostgreSQL + Auth + Realtime |
+| Auth | **Supabase Auth** | JWT-based |
+| Graph DB | Neo4j Aura | 302 địa điểm có sẵn |
+| LLM | **Google Gemini 2.5 Flash** | `gemini-2.5-flash-preview-05-20` |
+| Text Embedding | **text-embedding-004** | 768 dimensions |
+| Image Embedding | **CLIP** | Via API (HuggingFace/Replicate) |
+| Vector Store | **Supabase pgvector** | Cho semantic search |
 
-* **Framework**: FastAPI
+**Style bắt buộc:**
 
-* **DB quan hệ**: PostgreSQL (SQLAlchemy Async \+ Alembic)
-
-* **Graph DB**: Neo4j Aura (có sẵn data 302 địa điểm)
-
-* **LLM**: OpenAI / Anthropic / Gemini (gói gọn trong `llm_client` – phase sau)
-
-* **Style bắt buộc**:
-
-  * Sử dụng **async/await** cho I/O (DB, HTTP, Neo4j).
-
-  * Luôn dùng **type hints** đầy đủ.
-
-  * Dùng **Pydantic v2** (nếu có thể).
-
-  * Code phải **theo cấu trúc project** bên dưới.
+* Sử dụng **async/await** cho I/O (DB, HTTP, Neo4j).
+* Luôn dùng **type hints** đầy đủ.
+* Dùng **Pydantic v2**.
+* Code phải **theo cấu trúc project** bên dưới.
 
 ---
 
@@ -97,30 +96,70 @@ Tài xế được hỗ trợ nội dung để tạo cảm giác thân thiện m
 
 ### **2.1. File `.env.example`**
 
-Cursor phải tạo file `.env.example` với các biến sau:
+```env
+# FastAPI
+APP_ENV=local
+APP_DEBUG=true
 
-`# FastAPI`  
-`APP_ENV=local`  
-`APP_DEBUG=true`
+# Supabase
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+DATABASE_URL=postgresql+asyncpg://postgres:password@db.xxxxx.supabase.co:5432/postgres
 
-`# Postgres`  
-`POSTGRES_URL=postgresql+asyncpg://user:password@localhost:5432/localmate`
+# Neo4j
+NEO4J_URI=neo4j+s://xxxxx.databases.neo4j.io
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=CHANGE_ME
 
-`# Neo4j`  
-`NEO4J_URI=neo4j+s://64ff7b02.databases.neo4j.io`  
-`NEO4J_USER=neo4j`  
-`NEO4J_PASSWORD=CHANGE_ME`
+# Google AI
+GOOGLE_API_KEY=your_google_api_key
 
-`# LLM (phase sau)`  
-`OPENAI_API_KEY=your_openai_key_here`  
-`ANTHROPIC_API_KEY=your_anthropic_key_here`  
-`GOOGLE_API_KEY=your_gemini_key_here`
+# CLIP (optional - for image embeddings)
+HUGGINGFACE_API_KEY=your_hf_api_key
+```
 
 ### **2.2. `app/core/config.py`**
 
-* Tạo class `Settings(BaseSettings)` với các field trên.
+```python
+from functools import lru_cache
+from pydantic_settings import BaseSettings
 
-* Tạo function `get_settings()` dùng `lru_cache()`.
+class Settings(BaseSettings):
+    # App
+    app_env: str = "local"
+    app_debug: bool = True
+    
+    # Supabase
+    supabase_url: str
+    supabase_anon_key: str
+    supabase_service_role_key: str
+    database_url: str
+    
+    # Neo4j
+    neo4j_uri: str
+    neo4j_user: str
+    neo4j_password: str
+    
+    # Google AI (Gemini + Embeddings)
+    google_api_key: str
+    
+    # CLIP (optional)
+    huggingface_api_key: str | None = None
+    
+    # Model configs
+    gemini_model: str = "gemini-2.5-flash-preview-05-20"
+    embedding_model: str = "text-embedding-004"
+    
+    class Config:
+        env_file = ".env"
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+settings = get_settings()
+```
 
 ---
 
@@ -138,12 +177,13 @@ Cursor phải tạo file `.env.example` với các biến sau:
 
 * Class `Neo4jClient` với:
 
-`class Neo4jClient:`  
-    `def __init__(self, uri: str, user: str, password: str): ...`  
-    `async def run_cypher(self, query: str, params: dict | None = None) -> list[dict]: ...`
+```python
+class Neo4jClient:
+    def __init__(self, uri: str, user: str, password: str): ...
+    async def run_cypher(self, query: str, params: dict | None = None) -> list[dict]: ...
+```
 
-* Sử dụng Neo4j Python driver (async nếu có thể, không thì sync \+ `run_in_threadpool`).
-
+* Sử dụng Neo4j Python driver (async).
 * Tạo instance global: `neo4j_client = Neo4jClient(settings.neo4j_uri, ...)`.
 
 ---
@@ -153,8 +193,10 @@ Cursor phải tạo file `.env.example` với các biến sau:
 ### **5.1. Endpoints**
 
 1. `POST /api/v1/planner/itineraries/plan`
-
 2. `GET /api/v1/planner/itineraries/{itinerary_id}`
+
+> [!NOTE]
+> Tất cả endpoints yêu cầu **Supabase JWT** trong header `Authorization: Bearer <token>`.
 
 ### **5.2. Request / Response Models**
 
@@ -162,39 +204,43 @@ Cursor phải tạo file `.env.example` với các biến sau:
 
 #### **`ItineraryPlanRequest`**
 
-Cursor phải định nghĩa kiểu:
-
-`class ItineraryPlanRequest(BaseModel):`  
-    `user_id: uuid.UUID`  
-    `duration_days: int = Field(ge=1)`  
-    `family_size: int | None = None`  
-    `interests: list[str] | None = None   # ["beach", "seafood", "coffee"]`  
-    `budget: str | None = None            # "low", "medium", "high"`  
-    `start_date: date | None = None`  
-    `start_location_lat: float | None = None`  
-    `start_location_lng: float | None = None`
+```python
+class ItineraryPlanRequest(BaseModel):
+    duration_days: int = Field(ge=1)
+    family_size: int | None = None
+    interests: list[str] | None = None   # ["beach", "seafood", "coffee"]
+    budget: str | None = None            # "low", "medium", "high"
+    start_date: date | None = None
+    start_location_lat: float | None = None
+    start_location_lng: float | None = None
+    # user_id lấy từ JWT token, không cần truyền
+```
 
 #### **`ItineraryStopResponse`**
 
-`class ItineraryStopResponse(BaseModel):`  
-    `id: uuid.UUID`  
-    `day_index: int`  
-    `order_index: int`  
-    `place_id: str`  
-    `arrival_time: datetime | None = None`  
-    `stay_minutes: int | None = None`  
-    `snapshot: dict | None = None        # { "name": "...", "category": "...", ... }`
+```python
+class ItineraryStopResponse(BaseModel):
+    id: uuid.UUID
+    day_index: int
+    order_index: int
+    place_id: str
+    arrival_time: datetime | None = None
+    stay_minutes: int | None = None
+    snapshot: dict | None = None        # { "name": "...", "category": "...", ... }
+```
 
 #### **`ItineraryPlanResponse`**
 
-`class ItineraryPlanResponse(BaseModel):`  
-    `id: uuid.UUID`  
-    `user_id: uuid.UUID`  
-    `title: str`  
-    `total_days: int`  
-    `currency: str`  
-    `created_at: datetime`  
-    `stops: list[ItineraryStopResponse]`
+```python
+class ItineraryPlanResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    title: str
+    total_days: int
+    currency: str
+    created_at: datetime
+    stops: list[ItineraryStopResponse]
+```
 
 ---
 
@@ -203,33 +249,34 @@ Cursor phải định nghĩa kiểu:
 ### **6.1. `app/planner_app/api/router.py`**
 
 * Tạo `APIRouter(prefix="/planner", tags=["planner"])`.
-
 * Include `itineraries_router`.
 
 ### **6.2. `app/planner_app/api/itineraries_router.py`**
 
-* Tạo 2 endpoint:
+```python
+@router.post("/itineraries/plan", response_model=ItineraryPlanResponse)
+async def plan_itinerary(
+    request: ItineraryPlanRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # From Supabase JWT
+):
+    ...
 
-`@router.post("/itineraries/plan", response_model=ItineraryPlanResponse)`  
-`async def plan_itinerary(`  
-    `request: ItineraryPlanRequest,`  
-    `db: AsyncSession = Depends(get_db),`  
-`):`  
-    `...`
-
-`@router.get("/itineraries/{itinerary_id}", response_model=ItineraryPlanResponse)`  
-`async def get_itinerary(`  
-    `itinerary_id: uuid.UUID,`  
-    `db: AsyncSession = Depends(get_db),`  
-`):`  
-    `...`
+@router.get("/itineraries/{itinerary_id}", response_model=ItineraryPlanResponse)
+async def get_itinerary(
+    itinerary_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ...
+```
 
 ### **6.3. `app/api/v1/router.py`**
 
-* Tạo `APIRouter(prefix="/api/v1")` và include:
-
-`api_router.include_router(planner_router, prefix="/planner", tags=["planner"])`  
-`api_router.include_router(guide_router, prefix="/guide", tags=["guide"])  # optional`
+```python
+api_router.include_router(planner_router, prefix="/planner", tags=["planner"])
+api_router.include_router(guide_router, prefix="/guide", tags=["guide"])  # optional
+```
 
 ### **6.4. `app/main.py`**
 
@@ -241,66 +288,54 @@ Cursor phải định nghĩa kiểu:
 
 ### **7.1. Repository – `app/shared/repositories/itinerary_repository.py`**
 
-Cursor phải tạo class:
+```python
+class ItineraryRepository(BaseRepository):
+    async def create_with_stops(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        title: str,
+        total_days: int,
+        currency: str,
+        meta: dict | None,
+        stops: list[dict],
+    ) -> Itinerary:
+        ...
 
-`class ItineraryRepository(BaseRepository):`  
-    `async def create_with_stops(`  
-        `self,`  
-        `db: AsyncSession,`  
-        `user_id: uuid.UUID,`  
-        `title: str,`  
-        `total_days: int,`  
-        `currency: str,`  
-        `meta: dict | None,`  
-        `stops: list[dict],`  
-    `) -> Itinerary:`  
-        `...`
-
-    `async def get_with_stops(`  
-        `self,`  
-        `db: AsyncSession,`  
-        `itinerary_id: uuid.UUID,`  
-    `) -> Itinerary:`  
-        `...`
-
-* `stops` là list dict có:
-
-  * `day_index`
-
-  * `order_index`
-
-  * `place_id`
-
-  * optional: `stay_minutes`, `snapshot`.
+    async def get_with_stops(
+        self,
+        db: AsyncSession,
+        itinerary_id: uuid.UUID,
+    ) -> Itinerary:
+        ...
+```
 
 ### **7.2. Service – `app/planner_app/services/itinerary_service.py`**
 
-Tạo class:
+```python
+class ItineraryService:
+    def __init__(self, itinerary_repo: ItineraryRepository, planner_agent: PlannerAgent):
+        ...
 
-`class ItineraryService:`  
-    `def __init__(self, itinerary_repo: ItineraryRepository, planner_agent: PlannerAgent):`  
-        `...`
+    async def create_itinerary_plan(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,  # From JWT
+        request: ItineraryPlanRequest,
+    ) -> ItineraryPlanResponse:
+        """
+        1. Gọi planner_agent.create_itinerary(...) để nhận PlannerItineraryResult.
+        2. Lưu itinerary + stops vào Supabase Postgres.
+        3. Map sang ItineraryPlanResponse.
+        """
 
-    `async def create_itinerary_plan(`  
-        `self,`  
-        `db: AsyncSession,`  
-        `request: ItineraryPlanRequest,`  
-    `) -> ItineraryPlanResponse:`  
-        `"""`  
-        `1. Gọi planner_agent.create_itinerary(...) để nhận PlannerItineraryResult.`  
-        `2. Lưu itinerary + stops vào Postgres.`  
-        `3. Map sang ItineraryPlanResponse.`  
-        `"""`
-
-    `async def get_itinerary(`  
-        `self,`  
-        `db: AsyncSession,`  
-        `itinerary_id: uuid.UUID,`  
-    `) -> ItineraryPlanResponse:`  
-        `"""`  
-        `1. Lấy itinerary + stops từ DB.`  
-        `2. (Phase sau) Có thể join với Neo4j để enrich.`  
-        `"""`
+    async def get_itinerary(
+        self,
+        db: AsyncSession,
+        itinerary_id: uuid.UUID,
+    ) -> ItineraryPlanResponse:
+        ...
+```
 
 ---
 
@@ -308,93 +343,61 @@ Tạo class:
 
 ### **8.1. TSP Solver – `app/shared/graph/tsp_solver.py`**
 
-Cursor phải implement hàm:
-
-`async def nearest_neighbor_tsp(`  
-    `points: list[tuple[float, float]],`  
-    `start_index: int = 0,`  
-`) -> list[int]:`  
-    `"""`  
-    `points: list of (lat, lng)`  
-    `return: order of indices representing visiting sequence (starting from start_index)`  
-    `"""`
-
-* Logic: heuristic Nearest Neighbor:
-
-  * Bắt đầu ở `start_index`.
-
-  * Mỗi lần chọn điểm chưa đi có khoảng cách nhỏ nhất.
+```python
+async def nearest_neighbor_tsp(
+    points: list[tuple[float, float]],
+    start_index: int = 0,
+) -> list[int]:
+    """
+    points: list of (lat, lng)
+    return: order of indices representing visiting sequence
+    """
+```
 
 ### **8.2. Place Graph Service – `app/shared/graph/place_graph_service.py`**
 
-Cursor phải implement class:
+```python
+class PlaceGraphService:
+    def __init__(self, neo4j_client: Neo4jClient):
+        ...
 
-`class PlaceGraphService:`  
-    `def __init__(self, neo4j_client: Neo4jClient):`  
-        `...`
-
-    `async def find_restaurant_and_cafe_for_evening(`  
-        `self,`  
-        `interests: list[str] | None,`  
-        `max_distance_km: float = 3.0,`  
-    `) -> dict:`  
-        `"""`  
-        `MVP example flow:`  
-        `1. Tìm 1 nhà hàng hải sản gần biển Mỹ Khê (hardcode region hoặc nhận param).`  
-        `2. Tìm 1 quán cafe yên tĩnh gần nhà hàng đó (NEAR relationship).`  
-        `3. Return:`  
-           `{`  
-             `"places": [`  
-               `{"place_id": "...", "lat": ..., "lng": ..., "category": "restaurant", ...},`  
-               `{"place_id": "...", "lat": ..., "lng": ..., "category": "cafe", ...}`  
-           `]`  
-           `}`  
-        `"""`
-
-Ghi chú: MVP chỉ cần hardcode logic đơn giản:
-
-* Restaurant category chứa "restaurant" & specialty "seafood", rating \>= 4.0.
-
-* Cafe category chứa "cafe", NEAR restaurant \< max\_distance\_km.
+    async def find_restaurant_and_cafe_for_evening(
+        self,
+        interests: list[str] | None,
+        max_distance_km: float = 3.0,
+    ) -> dict:
+        """MVP: Hardcode logic đơn giản"""
+```
 
 ### **8.3. PlannerAgent – `app/planner_app/agents/planner_agent.py`**
 
-`@dataclass`  
-`class PlannerStop:`  
-    `place_id: str`  
-    `lat: float`  
-    `lng: float`  
-    `day_index: int`  
-    `order_index: int`  
-    `snapshot: dict | None = None`
+```python
+@dataclass
+class PlannerStop:
+    place_id: str
+    lat: float
+    lng: float
+    day_index: int
+    order_index: int
+    snapshot: dict | None = None
 
-`@dataclass`  
-`class PlannerItineraryResult:`  
-    `title: str`  
-    `total_days: int`  
-    `currency: str`  
-    `stops: list[PlannerStop]`
+@dataclass
+class PlannerItineraryResult:
+    title: str
+    total_days: int
+    currency: str
+    stops: list[PlannerStop]
 
-`class PlannerAgent:`  
-    `def __init__(self, place_graph_service: PlaceGraphService):`  
-        `...`
+class PlannerAgent:
+    def __init__(self, place_graph_service: PlaceGraphService):
+        ...
 
-    `async def create_itinerary(`  
-        `self,`  
-        `request: ItineraryPlanRequest,`  
-    `) -> PlannerItineraryResult:`  
-        `"""`  
-        `MVP flow:`  
-        `1. Ignore LLM. Dùng rule-based qua PlaceGraphService.`  
-        `2. Lấy about 2 places: restaurant + cafe.`  
-        `3. Dùng tsp_solver.nearest_neighbor_tsp để sắp xếp 2+ điểm (nếu cần).`  
-        `4. Đóng gói thành PlannerItineraryResult:`  
-           `- title: generate đơn giản, ví dụ "Evening in Da Nang"`  
-           `- total_days = request.duration_days`  
-           `- currency = "VND"`  
-        `"""`
-
-**Phase sau** mới thêm LLM và Graph-RAG nâng cao.
+    async def create_itinerary(
+        self,
+        request: ItineraryPlanRequest,
+    ) -> PlannerItineraryResult:
+        """MVP: Rule-based, không dùng LLM"""
+```
 
 ---
 
@@ -402,23 +405,13 @@ Ghi chú: MVP chỉ cần hardcode logic đơn giản:
 
 ### **9.1. `app/planner_app/tests/test_itinerary_api.py`**
 
-Cursor phải viết các test:
-
 1. Test `POST /api/v1/planner/itineraries/plan`:
-
-* Input: sample `ItineraryPlanRequest`.
-
-* Expect:
-
-  * Status 200\.
-
-  * Response JSON có `id`, `stops` length \>= 1\.
-
-  * Các stops có `place_id` dạng string không rỗng.
+   * Input: sample request + valid JWT
+   * Expect: Status 200, có `id`, `stops` length >= 1
 
 2. Test `GET /api/v1/planner/itineraries/{id}`:
+   * Gọi sau khi tạo
+   * Expect trả đúng itinerary
 
-* Gọi sau khi tạo.
-
-* Expect trả đúng itinerary vừa tạo.
-
+3. Test unauthorized access:
+   * No JWT → 401

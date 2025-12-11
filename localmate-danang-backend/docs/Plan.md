@@ -1,68 +1,74 @@
 # LocalMate Da Nang – Master Plan
 
-Plan master tổng hợp toàn bộ thông tin dự án, database, cấu trúc thư mục và lộ trình triển khai chi tiết cho **LocalMate Da Nang**.
-
----
-
 ## 1. Overview
-**LocalMate** là một "Danang Tourism Super Agent" hoạt động theo mô hình **Dual-Agent**:
-1.  **AI Travel Planner (Planner App):** Dành cho khách du lịch. Giúp lên kế hoạch, tìm địa điểm qua Graph-RAG (Neo4j), tối ưu lộ trình (TSP), và đặt dịch vụ (MCP).
-2.  **AI Guide Pack (Guide App):** Dành cho tài xế Grab. Cung cấp nội dung hướng dẫn (fun facts, tips) để tài xế trở thành "local buddy".
 
-**Mục tiêu v0.1 (MVP):** Tập trung hoàn thiện **Planning Agent** (FastAPI + Postgres + Neo4j).
+**LocalMate** là "Danang Tourism Super Agent" với mô hình **Dual-Agent**:
 
-*Chi tiết xem tại:* [Overview.md](Overview.md)
+1. **AI Travel Planner**: Lên kế hoạch, tìm địa điểm (Neo4j), tối ưu lộ trình (TSP), đặt dịch vụ.
+2. **AI Guide Pack**: Nội dung hướng dẫn cho tài xế (fun facts, tips).
 
----
-
-## 2. Database Structure
-Hệ thống sử dụng mô hình lai (Hybrid Database):
-
-### PostgreSQL (Main Data)
-Lưu trữ dữ liệu structured, user, booking và itinerary.
-*   **users:** Tài khoản (tourist, driver).
-*   **driver_profiles:** Thông tin tài xế.
-*   **itineraries:** Chuyến đi của user.
-*   **itinerary_stops:** Điểm dừng (liên kết với Neo4j qua `place_id`).
-*   **bookings:** Giao dịch MCP.
-
-### Neo4j (Graph Data)
-Lưu trữ địa điểm (Places) và quan hệ không gian.
-*   **Node:** `Place` (id, name, lat, lng, category, rating).
-*   **Relation:** `NEAR` (khoảng cách), semantic relationships.
-
-*Chi tiết xem tại:* [Database.md](Database.md)
+**MVP v0.1:** Tập trung **Planning Agent** (FastAPI + Supabase + Neo4j + Gemini).
 
 ---
 
-## 3. Folder Structure
-Dự án được tổ chức theo cấu trúc Modular Monolith:
+## 2. Tech Stack
 
-```text
-localmate-danang-backend/
-├── app/
-│   ├── core/           # Config, logging
-│   ├── shared/         # DB session, Models, Neo4jClient, Graph Algos (TSP)
-│   ├── planner_app/    # Logic chính: Agent, Service, API cho Planner
-│   ├── guide_app/      # Logic cho Guide Pack (Future)
-│   └── supervisor/     # Orchesration (Future)
-└── docs/               # Tài liệu dự án
+| Component | Technology |
+|-----------|------------|
+| Language | Python 3.11+ |
+| Framework | FastAPI |
+| Database | **Supabase** (PostgreSQL + Auth + pgvector) |
+| Auth | **Supabase Auth** (JWT) |
+| Graph DB | Neo4j Aura |
+| LLM | **Google Gemini 2.5 Flash** |
+| Text Embedding | **text-embedding-004** |
+| Image Embedding | **CLIP** (via API) |
+
+*Chi tiết:* [Overview.md](Overview.md)
+
+---
+
+## 3. Database Structure
+
+### Supabase PostgreSQL
+- `profiles` – User profile (linked to `auth.users`)
+- `itineraries` – Trip plans
+- `itinerary_stops` – Stops (linked to Neo4j `place_id`)
+- `bookings` – MCP transactions
+- `place_embeddings` – Vector embeddings (pgvector)
+
+### Neo4j
+- `Place` nodes với `NEAR` relationships
+
+*Chi tiết:* [Database.md](Database.md)
+
+---
+
+## 4. Folder Structure
+
+```
+app/
+├── core/           # Config, logging, security
+├── shared/         # DB, Models, Integrations, Graph
+├── planner_app/    # Planner Agent + API
+├── guide_app/      # Guide Pack (Future)
+└── supervisor/     # Orchestration (Future)
 ```
 
-*Chi tiết xem tại:* [Folder Structure.md](Folder%20Structure.md)
+*Chi tiết:* [Folder Structure.md](Folder%20Structure.md)
 
 ---
 
-## 4. Phases (Lộ trình triển khai)
+## 5. Phases
 
-Dự án được chia thành 7 phases, từ bootstrap đến hoàn thiện AI Agent.
+| Phase | Tên | Mô tả | Chi tiết |
+|-------|-----|-------|----------|
+| **0** | Bootstrap | Supabase + Neo4j + Gemini setup | [phase_0](phases/phase_0_bootstrap.md) |
+| **1** | Planner API | API skeleton với dummy data | [phase_1](phases/phase_1_planner_api_skeleton.md) |
+| **2** | Neo4j Integration | Real place data | [phase_2](phases/phase_2_neo4j_integration.md) |
+| **3** | TSP Optimization | Route optimization | [phase_3](phases/phase_3_tsp_optimization.md) |
+| **4** | LLM + Embeddings | Gemini + semantic search | [phase_4](phases/phase_4_llm_integration.md) |
+| **5** | MCP Hooks | Booking actions | [phase_5](phases/phase_5_mcp_actions.md) |
+| **6** | Guide Pack | Driver features | [phase_6](phases/phase_6_guide_pack.md) |
 
-| Phase | Tên Phase | Mô tả ngắn | Chi tiết |
-| :--- | :--- | :--- | :--- |
-| **0** | **Bootstrap** | Setup FastAPI, Poetry, Postgres (Alembic), Neo4j connection. | [Xem chi tiết](phases/phase_0_bootstrap.md) |
-| **1** | **Planner API Skeleton** | Xây dựng API CRUD cho Itinerary (Dummy Agent, Data giả). | [Xem chi tiết](phases/phase_1_planner_api_skeleton.md) |
-| **2** | **Neo4j Integration** | Kết nối Planner Agent với database thật (Neo4j) để tìm địa điểm. | [Xem chi tiết](phases/phase_2_neo4j_integration.md) |
-| **3** | **Route Optimization (TSP)** | Tích hợp thuật toán TSP (Nearest Neighbor) để sắp xếp lộ trình đi lại tối ưu. | [Xem chi tiết](phases/phase_3_tsp_optimization.md) |
-| **4** | **LLM Integration** | Tích hợp LLM để hiểu intent người dùng và tạo mô tả hấp dẫn (Graph-RAG Lite). | [Xem chi tiết](phases/phase_4_llm_integration.md) |
-| **5** | **MCP Hooks** | Chuẩn bị action hooks cho việc booking (Grab, Ticket) trong tương lai. | [Xem chi tiết](phases/phase_5_mcp_actions.md) |
-| **6** | **Guide Pack Agent** | (Future) Xây dựng tính năng hỗ trợ nội dung cho tài xế. | [Xem chi tiết](phases/phase_6_guide_pack.md) |
+**MVP Scope:** Phase 0-3 (bắt buộc), Phase 4 (nên có)
