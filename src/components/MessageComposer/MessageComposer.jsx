@@ -70,17 +70,6 @@ const MessageComposer = ({ onSendMessage }) => {
         />
 
         <Group gap={4} pr={4}>
-          {/* Voice Input */}
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="lg"
-            radius="md"
-            title="Voice Input"
-          >
-            <IconMicrophone size={20} />
-          </ActionIcon>
-
           {/* Upload Image */}
           <ActionIcon
             variant="subtle"

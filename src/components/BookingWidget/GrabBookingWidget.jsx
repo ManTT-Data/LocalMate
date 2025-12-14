@@ -1,9 +1,25 @@
-import React from "react";
-import { Paper, Group, Box, Text, Button, Avatar } from "@mantine/core";
-import { IconArrowRight } from "@tabler/icons-react";
+import React, { useState } from "react";
+import {
+  Paper,
+  Group,
+  Box,
+  Text,
+  Button,
+  Avatar,
+  ActionIcon,
+  Collapse,
+} from "@mantine/core";
+import {
+  IconArrowRight,
+  IconChevronDown,
+  IconChevronUp,
+  IconX,
+} from "@tabler/icons-react";
 import { grabBooking } from "../../data/mockData";
 
-const GrabBookingWidget = () => {
+const GrabBookingWidget = ({ onClose }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
     <Paper
       p="md"
@@ -23,7 +39,7 @@ const GrabBookingWidget = () => {
       }}
     >
       {/* Header */}
-      <Group justify="space-between" mb="md">
+      <Group justify="space-between" mb={isCollapsed ? 0 : "md"}>
         <Group gap="sm">
           <Avatar
             size="sm"
@@ -41,68 +57,101 @@ const GrabBookingWidget = () => {
             Ride Recommendation
           </Text>
         </Group>
-        <Text size="xs" c="dimmed">
-          {grabBooking.eta}
-        </Text>
+
+        <Group gap={4}>
+          {!isCollapsed && (
+            <Text size="xs" c="dimmed" mr="xs">
+              {grabBooking.eta}
+            </Text>
+          )}
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="gray"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsCollapsed(!isCollapsed);
+            }}
+          >
+            {isCollapsed ? (
+              <IconChevronDown size={16} />
+            ) : (
+              <IconChevronUp size={16} />
+            )}
+          </ActionIcon>
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="gray"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose && onClose();
+            }}
+          >
+            <IconX size={16} />
+          </ActionIcon>
+        </Group>
       </Group>
 
-      {/* Car Selection */}
-      <Paper
-        p="sm"
-        radius="lg"
-        withBorder
-        mb="md"
-        style={{
-          cursor: "pointer",
-          transition: "all 0.2s",
-          backgroundColor: "var(--mantine-color-gray-0)",
-        }}
-        styles={{
-          root: {
-            "&:hover": {
-              borderColor: "rgba(19, 182, 236, 0.5)",
+      <Collapse in={!isCollapsed}>
+        {/* Car Selection */}
+        <Paper
+          p="sm"
+          radius="lg"
+          withBorder
+          mb="md"
+          style={{
+            cursor: "pointer",
+            transition: "all 0.2s",
+            backgroundColor: "var(--mantine-color-gray-0)",
+          }}
+          styles={{
+            root: {
+              "&:hover": {
+                borderColor: "rgba(19, 182, 236, 0.5)",
+              },
             },
-          },
-        }}
-      >
-        <Group justify="space-between" wrap="nowrap">
-          <Box
-            w={48}
-            h={32}
-            style={{
-              backgroundImage: `url("${grabBooking.carImage}")`,
-              backgroundSize: "contain",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-          <Box flex={1}>
+          }}
+        >
+          <Group justify="space-between" wrap="nowrap">
+            <Box
+              w={48}
+              h={32}
+              style={{
+                backgroundImage: `url("${grabBooking.carImage}")`,
+                backgroundSize: "contain",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
+            <Box flex={1}>
+              <Text size="sm" fw={700}>
+                {grabBooking.carType}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {grabBooking.carDescription}
+              </Text>
+            </Box>
             <Text size="sm" fw={700}>
-              {grabBooking.carType}
+              {grabBooking.price}
             </Text>
-            <Text size="xs" c="dimmed">
-              {grabBooking.carDescription}
-            </Text>
-          </Box>
-          <Text size="sm" fw={700}>
-            {grabBooking.price}
-          </Text>
-        </Group>
-      </Paper>
+          </Group>
+        </Paper>
 
-      {/* Book Button */}
-      <Button
-        fullWidth
-        size="md"
-        radius="lg"
-        rightSection={<IconArrowRight size={18} />}
-        style={{
-          backgroundColor: "var(--neutral-900)",
-          transition: "all 0.2s",
-        }}
-      >
-        Book Grab Now
-      </Button>
+        {/* Book Button */}
+        <Button
+          fullWidth
+          size="md"
+          radius="lg"
+          rightSection={<IconArrowRight size={18} />}
+          style={{
+            backgroundColor: "var(--neutral-900)",
+            transition: "all 0.2s",
+          }}
+        >
+          Book Grab Now
+        </Button>
+      </Collapse>
     </Paper>
   );
 };
