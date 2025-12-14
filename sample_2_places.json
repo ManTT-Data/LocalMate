@@ -1,0 +1,308 @@
+[
+  {
+    "id": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2",
+    "name": "PHỞ LÝ QUỐC SƯ ĐÀ NẴNG CƠ SỞ 2",
+    "name_vi": "Pho Ly Quoc Su",
+    "rating": 4.0,
+    "category": "Bistro",
+    "category_name": "Bistro",
+    "address": "\n220 Xô Viết Nghệ Tĩnh, Khuê Trung, Đà Nẵng, 50000, Vietnam",
+    "coordinates": {
+      "latitude": 16.0321181,
+      "longitude": 108.2041685
+    },
+    "phone": "\n+84 859 212 212",
+    "website": null,
+    "google_maps_url": "https://maps.app.goo.gl/gkp57ap7WvwJToub8",
+    "price_range": "40,000 - 80,000",
+    "description": "Northern-style pho with a light, aromatic broth and tender beef. A hidden gem recommended for its traditional flavors and affordable prices.",
+    "specialty": "",
+    "photos_count": 30,
+    "reviews_count": 10,
+    "photos": [
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_001.jpg",
+        "filename": "photo_001.jpg",
+        "order": 1
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_002.jpg",
+        "filename": "photo_002.jpg",
+        "order": 2
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_003.jpg",
+        "filename": "photo_003.jpg",
+        "order": 3
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_004.jpg",
+        "filename": "photo_004.jpg",
+        "order": 4
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_005.jpg",
+        "filename": "photo_005.jpg",
+        "order": 5
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_006.jpg",
+        "filename": "photo_006.jpg",
+        "order": 6
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_007.jpg",
+        "filename": "photo_007.jpg",
+        "order": 7
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_008.jpg",
+        "filename": "photo_008.jpg",
+        "order": 8
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_009.jpg",
+        "filename": "photo_009.jpg",
+        "order": 9
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_010.jpg",
+        "filename": "photo_010.jpg",
+        "order": 10
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_011.jpg",
+        "filename": "photo_011.jpg",
+        "order": 11
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_012.jpg",
+        "filename": "photo_012.jpg",
+        "order": 12
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_013.jpg",
+        "filename": "photo_013.jpg",
+        "order": 13
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_014.jpg",
+        "filename": "photo_014.jpg",
+        "order": 14
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_015.jpg",
+        "filename": "photo_015.jpg",
+        "order": 15
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_016.jpg",
+        "filename": "photo_016.jpg",
+        "order": 16
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_017.jpg",
+        "filename": "photo_017.jpg",
+        "order": 17
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_018.jpg",
+        "filename": "photo_018.jpg",
+        "order": 18
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_019.jpg",
+        "filename": "photo_019.jpg",
+        "order": 19
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_020.jpg",
+        "filename": "photo_020.jpg",
+        "order": 20
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_021.jpg",
+        "filename": "photo_021.jpg",
+        "order": 21
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_022.jpg",
+        "filename": "photo_022.jpg",
+        "order": 22
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_023.jpg",
+        "filename": "photo_023.jpg",
+        "order": 23
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_024.jpg",
+        "filename": "photo_024.jpg",
+        "order": 24
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_025.jpg",
+        "filename": "photo_025.jpg",
+        "order": 25
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_026.jpg",
+        "filename": "photo_026.jpg",
+        "order": 26
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_027.jpg",
+        "filename": "photo_027.jpg",
+        "order": 27
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_028.jpg",
+        "filename": "photo_028.jpg",
+        "order": 28
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_029.jpg",
+        "filename": "photo_029.jpg",
+        "order": 29
+      },
+      {
+        "path": "phở_lý_quốc_sư_đà_nẵng_cơ_sở_2/photos/photo_030.jpg",
+        "filename": "photo_030.jpg",
+        "order": 30
+      }
+    ],
+    "reviews": [
+      {
+        "rating": 5,
+        "reviewer": "Kuang YM\nLocal Guide · 21 reviews · 22 photos",
+        "text": "Was brought here by my tour guide and the food is indeed worth it.\nBeef and Chicken pho are good. Meat is tender and fresh.\nSuitable for a rainy day.\nRecommended for local taste"
+      },
+      {
+        "rating": 5,
+        "reviewer": "Luong The Tang\nLocal Guide · 85 reviews · 126 photos",
+        "text": "Local Guide · 85 reviews · 126 photos"
+      },
+      {
+        "rating": 4,
+        "reviewer": "方王\nLocal Guide · 89 reviews · 11 photos",
+        "text": "Good\nFood: 5\nService: 4…\nMore"
+      }
+    ],
+    "nearby_places": [
+      {
+        "distance_km": 0.47,
+        "name": "Cơm Tấm Thanh Trường",
+        "rating": 4.5,
+        "category": "Vietnamese restaurant"
+      },
+      {
+        "distance_km": 0.61,
+        "name": "Ba Hưng Bakery",
+        "rating": 3.7,
+        "category": "Bakery"
+      }
+    ]
+  },
+  {
+    "id": "adanle_bánh_mì_sáng",
+    "name": "Adanle Bánh Mì Sáng",
+    "name_vi": "Adanle Morning Banh Mi",
+    "rating": 4.2,
+    "category": "Tiffin center",
+    "category_name": "Tiffin center",
+    "address": "\n05 Nguyễn Huy Lượng, Thanh Khê Đông, Thanh Khê, Đà Nẵng 550000, Vietnam",
+    "coordinates": {
+      "latitude": 16.0740093,
+      "longitude": 108.1776749
+    },
+    "phone": "\n+84 905 984 640",
+    "website": null,
+    "google_maps_url": "https://maps.app.goo.gl/4BjcZc3Fm7M7xKHx9",
+    "price_range": "25,000 - 45,000 VND",
+    "description": "Specializes in breakfast banh mi. Freshly baked every morning, with fillings like pork floss, egg, and fragrant pate. Fast and friendly service.",
+    "specialty": "",
+    "photos_count": 6,
+    "reviews_count": 15,
+    "photos": [
+      {
+        "path": "adanle_bánh_mì_sáng/photos/photo_001.jpg",
+        "filename": "photo_001.jpg",
+        "order": 1
+      },
+      {
+        "path": "adanle_bánh_mì_sáng/photos/photo_002.jpg",
+        "filename": "photo_002.jpg",
+        "order": 2
+      },
+      {
+        "path": "adanle_bánh_mì_sáng/photos/photo_003.jpg",
+        "filename": "photo_003.jpg",
+        "order": 3
+      },
+      {
+        "path": "adanle_bánh_mì_sáng/photos/photo_004.jpg",
+        "filename": "photo_004.jpg",
+        "order": 4
+      },
+      {
+        "path": "adanle_bánh_mì_sáng/photos/photo_005.jpg",
+        "filename": "photo_005.jpg",
+        "order": 5
+      },
+      {
+        "path": "adanle_bánh_mì_sáng/photos/photo_006.jpg",
+        "filename": "photo_006.jpg",
+        "order": 6
+      }
+    ],
+    "reviews": [
+      {
+        "rating": 1,
+        "reviewer": "Ni Ngô Hà\n2 reviews",
+        "text": "Going to eat is like begging, calling the staff to get food, calling over and over again but the staff doesn't listen, just standing there talking, so annoying, asking for more food but the staff says yes then doesn't bring it out, waiting for a long time then calling again for someone to bring it, did I not pay or something, why is the attitude so bad? The two times I've come to eat it was the same, so bad"
+      },
+      {
+        "rating": 5,
+        "reviewer": "Cat Vo\n3 reviews · 1 photo",
+        "text": "Oh my! It's been almost 3 years and I still haven't tasted the restaurant's beefsteak dish :))) The price from the day it opened until now is only $1.20 cents, I'm looking forward to the day the restaurant returns to table number 1 hahahahah"
+      },
+      {
+        "rating": 5,
+        "reviewer": "Hạ Lương Quý\n4 reviews · 2 photos",
+        "text": "I only like to eat soupy dishes in the morning. But when I was introduced to fried bread here, I was addicted. The dipping sauce is of the right quality. Strange and tasty. Bonus: the airy view + the owner is also funny. …"
+      }
+    ],
+    "nearby_places": [
+      {
+        "distance_km": 0.88,
+        "name": "Hủ tiếu Nam Vang PHÚ HỒNG PHÁT",
+        "rating": 3.9,
+        "category": "Restaurant"
+      },
+      {
+        "distance_km": 0.9,
+        "name": "Bún bò Bé Mai",
+        "rating": 4.4,
+        "category": "Vietnamese restaurant"
+      },
+      {
+        "distance_km": 0.67,
+        "name": "Tiny brigh house",
+        "rating": 4.9,
+        "category": "Hotel"
+      },
+      {
+        "distance_km": 0.61,
+        "name": "Trung Nguyên Legend Café",
+        "rating": 4.5,
+        "category": "Coffee shop"
+      },
+      {
+        "distance_km": 0.27,
+        "name": "Bún Chả Cá Tam Giác",
+        "rating": 4.5,
+        "category": "Restaurant"
+      }
+    ]
+  }
+]
