@@ -6,10 +6,15 @@ Use this if spatial import failed due to timeout
 
 from neo4j import GraphDatabase
 import math
+import os
+from dotenv import load_dotenv
 
-URI = "neo4j+s://64ff7b02.databases.neo4j.io"
-USERNAME = "neo4j"
-PASSWORD = "O-yclTiDYCKZCg55HfVoe1pPLNpZGwG0-UCoBzIS_c4"
+# Load environment variables from .env file
+load_dotenv()
+
+URI = os.getenv("NEO4J_URI")
+USERNAME = os.getenv("NEO4J_USERNAME")
+PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 driver = GraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
 

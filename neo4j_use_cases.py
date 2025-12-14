@@ -1,15 +1,19 @@
 """
-Real-World Use Cases for Danang Tourism Database
-Practical examples for common scenarios
+Neo4j Use Cases - Danang Tourism Database
+Demonstrates practical queries for tourism recommendations
 """
 
 from neo4j import GraphDatabase
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Connection
-URI = os.getenv("NEO4J_URI", "neo4j+s://64ff7b02.databases.neo4j.io")
-USERNAME = os.getenv("NEO4J_USERNAME", "neo4j")
-PASSWORD = os.getenv("NEO4J_PASSWORD", "O-yclTiDYCKZCg55HfVoe1pPLNpZGwG0-UCoBzIS_c4")
+URI = os.getenv("NEO4J_URI")
+USERNAME = os.getenv("NEO4J_USERNAME")
+PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 driver = GraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
 
