@@ -1,9 +1,9 @@
-import DaNangTourism from "../pages/DaNangTourism";
+import AiMapView from "../pages/AiMapView";
 
 const appRoutes = [
   {
     path: "/",
-    element: <DaNangTourism />,
+    element: <AiMapView />,
   },
 ];
 

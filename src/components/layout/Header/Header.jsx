@@ -25,7 +25,7 @@ const Header = ({ onToggleDarkMode, isDarkMode }) => {
       <Group gap="md">
         <IconMapSearch size={32} stroke={1.5} />
         <Text size="lg" fw={700}>
-          Da Nang Super Agent
+          LocalMate Agent
         </Text>
       </Group>
 

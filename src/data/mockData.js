@@ -8,7 +8,7 @@ export const userProfile = {
 };
 
 export const aiAgent = {
-  name: "Super Agent",
+  name: "Local Agent",
   avatar:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBPT4cRaJeVkKTOOImkcsyQXerboBrqLHhuLLV1t-i9YjdYe2FxKPsUxgthNKtXtbmg6q-c5tIcmJc-AS_8QDaOa9syh65MFnSf8WOoCtGXRpDBlqts1VUW5XcPN4kgUwAFkJ6yekABQ8o78dntl19IDXJ_8n8lZ0Sm-ONw8dKxG5uOqjDZpJ7QvRXm4IzmVM70xbc66qDQgxHw-cCxV0suqbDqDBKtgMCfB43hPI61zl2UyFaJTNuJtwcb7snC7e2zRmQisB9d8FRk",
 };
@@ -100,7 +100,8 @@ export const tripContext = {
 export const navigationLinks = [
   { id: 1, label: "Home", href: "#", active: true },
   { id: 2, label: "My Trips", href: "#", active: false },
-  { id: 3, label: "Saved Places", href: "#", active: false },
+  { id: 3, label: "My bookings", href: "#", active: false },
+  { id: 4, label: "Saved Places", href: "#", active: false },
 ];
 
 export const contextualTabs = [
