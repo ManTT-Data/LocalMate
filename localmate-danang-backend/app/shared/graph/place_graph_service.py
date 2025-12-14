@@ -57,13 +57,13 @@ class PlaceGraphService:
         query = f"""
         MATCH (p:Place)
         WITH p, point.distance(
-            point({{latitude: p.lat, longitude: p.lng}}),
+            point({{latitude: p.latitude, longitude: p.longitude}}),
             point({{latitude: $lat, longitude: $lng}})
         ) / 1000 AS distance_km
         WHERE distance_km <= $max_distance
         {category_filter}
         RETURN p.id AS place_id, p.name AS name,
-               p.lat AS lat, p.lng AS lng,
+               p.latitude AS lat, p.longitude AS lng,
                p.category AS category, p.rating AS rating,
                p.description AS description,
                distance_km
