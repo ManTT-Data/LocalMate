@@ -1,0 +1,64 @@
+# Data directories - raw crawled data (too large for Git)
+data/places/
+data/photos/
+data/crawled/
+data/rag_processed/
+data/*.html
+data/*.json
+data/*.csv
+# Keep processed data
+!data/*.xlsx
+# !data/*.json
+!data/*.csv
+
+# Log files and test results
+Grab.txt
+*_log.txt
+*_results.json
+merge_log.txt
+crawl_*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Neo4j
+neo4j/
+
+# Environment variables
+.env
+.env.local
