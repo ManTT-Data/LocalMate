@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import { Box, Text, Button } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { usePlan } from "../../contexts/PlanContext";
 import useItineraryStore from "../../stores/useItineraryStore";
 import DayHeader from "./DayHeader";
 import TimelineStop from "./TimelineStop";
@@ -11,10 +10,9 @@ import PlanItem from "./PlanItem";
 import { DND_TYPES, COLORS, SIZES, Z_INDEX } from "./constants";
 
 const ItineraryList = ({ onItemClick }) => {
-  const { plan, removeItem, reorderItems } = usePlan();
-
-  // Use Zustand store instead of props
-  const { itineraryItems, reorderStops } = useItineraryStore();
+  // Use unified Zustand store
+  const { itineraryItems, reorderStops, plan, removeItem, reorderPlanItems } =
+    useItineraryStore();
 
   // Memoized drag end handler for better performance
   const handleDragEnd = useCallback(
@@ -37,7 +35,7 @@ const ItineraryList = ({ onItemClick }) => {
         const items = Array.from(plan.items);
         const [reorderedItem] = items.splice(source.index, 1);
         items.splice(destination.index, 0, reorderedItem);
-        reorderItems(items);
+        reorderPlanItems(items);
         return;
       }
 
@@ -52,7 +50,7 @@ const ItineraryList = ({ onItemClick }) => {
         reorderStops(dayIndex, dayStops);
       }
     },
-    [plan.items, itineraryItems, reorderItems, reorderStops]
+    [plan.items, itineraryItems, reorderPlanItems, reorderStops]
   );
 
   // Memoized computation to check if there are any plan items

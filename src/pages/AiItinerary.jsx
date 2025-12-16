@@ -4,7 +4,7 @@ import ItineraryList from "../components/Itinerary/ItineraryList";
 import ItineraryMap from "../components/Itinerary/ItineraryMap";
 import ContextualToolbar from "../components/ContextualToolbar/ContextualToolbar";
 import { tripMetadata } from "../data/mockData";
-import { fetchItineraryFromBackend } from "../services/itineraryService";
+import { fetchItineraryFromBackend } from "../apis/itineraryService";
 import useItineraryStore from "../stores/useItineraryStore";
 import {
   Box,
@@ -28,13 +28,11 @@ import {
   IconMapPin,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import { usePlan } from "../contexts/PlanContext";
 
 const AiItinerary = () => {
   const [activeTab, setActiveTab] = useState("itinerary"); // map, itinerary, bookings
-  const { plan, optimizeRoute } = usePlan();
 
-  // Zustand store
+  // Zustand store - unified state management
   const {
     itineraryItems,
     isLoading,
@@ -42,6 +40,8 @@ const AiItinerary = () => {
     setItinerary,
     setLoading,
     setError,
+    plan,
+    optimizeRoute,
   } = useItineraryStore();
 
   // Fetch itinerary data on mount

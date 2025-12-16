@@ -19,7 +19,7 @@ import {
   IconTicket,
   IconCalendar,
 } from "@tabler/icons-react";
-import { bookServiceAPI } from "../../services/itineraryService";
+import { bookServiceAPI } from "../../apis/itineraryService";
 import useItineraryStore from "../../stores/useItineraryStore";
 
 const BookingModal = ({ opened, onClose, stop, dayIndex, serviceType }) => {

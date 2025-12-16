@@ -160,3 +160,128 @@ export const tripContext = {
   budget: "Moderate Budget",
   icon: "temple_buddhist",
 };
+
+// Bookings Data
+export const mockBookings = [
+  {
+    id: "BK1734354000001",
+    userId: "user-001",
+    stopId: "marble-mountains",
+    bookingType: "ticket",
+    status: "confirmed",
+    price: "40k VND",
+    serviceName: "Marble Mountains Entry Ticket",
+    bookingDetails: {
+      quantity: 1,
+      date: "2024-10-24",
+      time: "09:00 AM",
+    },
+    createdAt: "2024-10-20T10:30:00Z",
+    confirmedAt: "2024-10-20T10:30:05Z",
+  },
+  {
+    id: "BK1734354000002",
+    userId: "user-001",
+    stopId: "marble-mountains",
+    bookingType: "transportation",
+    status: "confirmed",
+    price: "150k VND",
+    serviceName: "GrabCar to Mì Quảng Bà Mua",
+    bookingDetails: {
+      carType: "GrabCar 4-seater",
+      pickupTime: "10:30 AM",
+      from: "Marble Mountains",
+      to: "Mì Quảng Bà Mua",
+    },
+    createdAt: "2024-10-20T11:00:00Z",
+    confirmedAt: "2024-10-20T11:00:03Z",
+  },
+  {
+    id: "BK1734354000003",
+    userId: "user-001",
+    stopId: "lunch-mi-quang",
+    bookingType: "reservation",
+    status: "pending",
+    serviceName: "Mì Quảng Bà Mua - Table Reservation",
+    bookingDetails: {
+      partySize: 2,
+      date: "2024-10-24",
+      time: "11:00 AM",
+      specialRequests: "Window seat preferred",
+    },
+    createdAt: "2024-10-20T12:00:00Z",
+  },
+];
+
+// Enhanced Stops/Destinations Data (extends destinations array)
+export const allStops = [
+  ...destinations,
+  {
+    id: "my-khe-beach",
+    name: "My Khe Beach",
+    description: "One of the most beautiful beaches in Vietnam",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCWqXzVxKzOH9kOBKW4_h5F5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5K5j8",
+    location: { lat: 16.0397, lng: 108.2372 },
+    rating: 4.7,
+    reviews: 3200,
+    type: "Beach",
+    duration: "3 hrs",
+    cost: "Free",
+    photoCount: "2.5k",
+    openNow: true,
+    entryFee: "Free",
+  },
+  {
+    id: "be-man-seafood",
+    name: "Bé Mặn Seafood",
+    description: "Fresh seafood by the beach",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBPzVxKzOH9kOBKW4_h5F5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5K5j8",
+    location: { lat: 16.0421, lng: 108.2401 },
+    rating: 4.5,
+    reviews: 1800,
+    type: "Restaurant",
+    duration: "1.5 hrs",
+    photoCount: "980",
+    openNow: true,
+    entryFee: "Free",
+    isTopPick: true,
+  },
+  {
+    id: "dragon-bridge",
+    name: "Dragon Bridge",
+    description: "Iconic bridge that breathes fire on weekends",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDragonBridgeImagePlaceholder",
+    location: { lat: 16.0608, lng: 108.2278 },
+    rating: 4.8,
+    reviews: 5200,
+    type: "Landmark",
+    duration: "1 hr",
+    cost: "Free",
+    photoCount: "3.8k",
+    openNow: true,
+    entryFee: "Free",
+  },
+];
+
+// User Preferences Data
+export const userPreferences = {
+  userId: "user-001",
+  travelStyle: "cultural-explorer",
+  budgetLevel: "moderate",
+  preferredTransport: ["walking", "taxi", "public-transport"],
+  dietaryRestrictions: [],
+  interests: ["history", "food", "photography", "beaches"],
+  preferredLanguage: "vi",
+  notifications: {
+    bookingReminders: true,
+    priceAlerts: true,
+    recommendations: true,
+  },
+  savedLocations: [
+    { name: "Hyatt Regency Danang", lat: 16.012855984, lng: 108.263785 },
+  ],
+  recentSearches: ["Marble Mountains", "Mì Quảng", "My Khe Beach"],
+};

@@ -22,11 +22,11 @@ import {
   IconCheck,
 } from "@tabler/icons-react";
 import { destinations } from "../../data/mockData";
-import { usePlan } from "../../contexts/PlanContext";
+import useItineraryStore from "../../stores/useItineraryStore";
 
 const DestinationCard = ({ destination = destinations[0], onClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { plan, addItem } = usePlan();
+  const { plan, addItem } = useItineraryStore();
 
   // Check if this destination is already in the plan
   const isInPlan = plan.items.some((item) => item.placeId === destination.id);
