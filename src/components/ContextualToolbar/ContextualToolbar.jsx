@@ -7,7 +7,7 @@ import { IconMap, IconCalendar, IconReceipt } from "@tabler/icons-react";
 const contextualTabs = [
   { id: 1, label: "Map View", icon: IconMap, href: "/" },
   { id: 2, label: "Itinerary", icon: IconCalendar, href: "/ai-itinerary" },
-  { id: 3, label: "Bookings", icon: IconReceipt, href: "#" },
+  { id: 3, label: "Bookings", icon: IconReceipt, href: "/booking" },
 ];
 
 const ContextualToolbar = () => {

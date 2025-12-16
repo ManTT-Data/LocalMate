@@ -1,5 +1,6 @@
 import AiMapView from "../pages/AiMapView";
 import AiItinerary from "../pages/AiItinerary";
+import BookingPage from "../pages/BookingPage";
 
 const appRoutes = [
   {
@@ -9,6 +10,10 @@ const appRoutes = [
   {
     path: "/ai-itinerary",
     element: <AiItinerary />,
+  },
+  {
+    path: "/booking",
+    element: <BookingPage />,
   },
 ];
 

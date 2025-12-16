@@ -216,6 +216,10 @@ const MapPanel = () => {
               <DestinationCard
                 destination={selectedDestination}
                 onClose={handleCloseCards}
+                onAddToItinerary={(destination) => {
+                  console.log("Add to itinerary:", destination);
+                  // Implement actual itinerary logic here
+                }}
               />
               <GrabBookingWidget onClose={handleCloseCards} />
             </Stack>

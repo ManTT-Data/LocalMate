@@ -15,7 +15,7 @@ import { userProfile } from "../../../data/mockData";
 const navigationLinks = [
   { id: 1, label: "Home", href: "/", active: false },
   { id: 2, label: "My Trips", href: "/ai-itinerary", active: false },
-  { id: 3, label: "My Bookings", href: "/bookings", active: false },
+  { id: 3, label: "My Bookings", href: "/booking", active: false },
   { id: 4, label: "Saved Places", href: "/saved", active: false },
 ];
 

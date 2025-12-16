@@ -335,3 +335,122 @@ export const userPreferences = {
   ],
   recentSearches: ["Marble Mountains", "Mì Quảng", "My Khe Beach"],
 };
+
+// Pricing Constants
+export const pricingConfig = {
+  serviceFeeRate: 0.065, // 6.5% service fee
+  taxRate: 0.08, // 8% tax
+  serviceFeeFixed: 15000, // Fixed service fee: 15.000₫
+};
+
+// Payment Methods
+export const paymentMethods = [
+  {
+    id: "visa-4242",
+    type: "card",
+    name: "Visa ending in 4242",
+    details: "Expires 12/25",
+    icon: "credit_card",
+    isDefault: true,
+  },
+  {
+    id: "grabpay-wallet",
+    type: "wallet",
+    name: "GrabPay Wallet",
+    details: "Balance: 1.2m VND",
+    icon: "account_balance_wallet",
+    color: "#00B14F",
+    isDefault: false,
+  },
+];
+
+// Order/Booking Metadata
+export const currentOrder = {
+  orderId: "DNG-8392",
+  status: "pending", // pending, confirmed, cancelled
+  createdAt: "2024-10-24T08:30:00Z",
+};
+
+// Pending Bookings for Review (matches HTML design)
+export const pendingBookings = [
+  {
+    id: "BK1734354000004",
+    userId: "user-001",
+    stopId: "marble-mountains",
+    bookingType: "transportation",
+    status: "pending",
+    price: 150000, // in VND
+    priceDisplay: "150.000₫",
+    serviceName: "GrabCar 4 Seats",
+    category: "Transportation",
+    categoryBadge: "Fulfilled by Grab",
+    scheduledTime: "Oct 24, 08:30 AM",
+    icon: "local_taxi",
+    iconBg: "#00B14F",
+    iconColor: "#00B14F",
+    bookingDetails: {
+      carType: "GrabCar 4 Seats",
+      description: "Compact • AC",
+      from: "Hyatt Regency",
+      to: "Marble Mountains",
+      pickupTime: "08:30 AM",
+      date: "2024-10-24",
+    },
+    image: null,
+    createdAt: "2024-10-23T15:00:00Z",
+  },
+  {
+    id: "BK1734354000005",
+    userId: "user-001",
+    stopId: "marble-mountains",
+    bookingType: "ticket",
+    status: "pending",
+    price: 80000, // 2 adults × 40k
+    priceDisplay: "80.000₫",
+    serviceName: "Marble Mountains Entrance",
+    category: "Activity Tickets",
+    categoryBadge: "Instant Confirmation",
+    scheduledTime: "Oct 24, 09:00 AM",
+    icon: "confirmation_number",
+    iconBg: "#3b82f6",
+    iconColor: "#3b82f6",
+    bookingDetails: {
+      quantity: 2,
+      ticketType: "Standard Entry",
+      guests: "2 Adults",
+      pricePerTicket: "40k",
+      date: "2024-10-24",
+      time: "09:00 AM",
+    },
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBrrTDjrH1hvbtNSdknnos-WIrvVccd2Ryt5RsDQhP2DprYZ2zz-wMDHV4TJXjTKPoISFoHRzRdpU447YYJCtNvC7LYtmpHHZXUsRUNYu0_d7XPyZQ3ESCmspngn3DH-0GkZYVKeuJSNUAZIPRQh6C07uwK_MCy7JeRfKsHh-NQdgbuaXe6YB3cdAEjBV3J8jE9Jhjaf6Q2tupEjzSJo0zO4HU4iJostMn9TZBsLKD2SE81FRXKLkkQ-I2JjR2bR9uwYkoL0Y7qnwFq",
+    createdAt: "2024-10-23T15:05:00Z",
+  },
+  {
+    id: "BK1734354000006",
+    userId: "user-001",
+    stopId: "lunch-mi-quang",
+    bookingType: "reservation",
+    status: "pending",
+    price: 0, // Free reservation
+    priceDisplay: "Free",
+    serviceName: "Mì Quảng Bà Mua",
+    category: "Restaurant Reservation",
+    categoryBadge: "Free Booking",
+    scheduledTime: "Oct 24, 11:30 AM",
+    icon: "restaurant_menu",
+    iconBg: "#f97316",
+    iconColor: "#f97316",
+    bookingDetails: {
+      partySize: 2,
+      tableType: "Table for 2",
+      mealType: "Lunch",
+      date: "2024-10-24",
+      time: "11:30 AM",
+      paymentNote: "Pay at venue",
+    },
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAuajKaysFsmhJPOzOEjqvmfqsx1AoKro4zAldb3m5FqXTW1tPjZMjHRaTGK4tj06JrqVgK1DbrQvJwTQSRuesuytCrB1Ed1PWqO05X5u8JgHG_chdTmnxejPsUfkYv2zcHTSkJv9F3aAzLIWp1Y4LOEhq0jBWiZDvCPF7iSlZ2v-Iy30tvPS8xbvm2vzT4xkIj7l3CmNNoxgLoXGFGfUSw2fzx5rJxUHW-dvDJsjJ4MU-UithTvjB0lGsV_Dnv9hENY_CaaxldwpNI",
+    createdAt: "2024-10-23T15:10:00Z",
+  },
+];
