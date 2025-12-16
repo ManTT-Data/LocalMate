@@ -71,8 +71,24 @@ class ImageSearchService:
     
     def _connect_db(self):
         """Connect to Supabase PostgreSQL"""
+        try:
+            if self.conn:
+                self.conn.close()
+        except:
+            pass
         self.conn = psycopg2.connect(DATABASE_URL)
+        self.conn.autocommit = True  # Prevent transaction issues
         print("✅ Connected to Supabase PostgreSQL for image search")
+    
+    def _ensure_connection(self):
+        """Ensure database connection is valid, reconnect if needed"""
+        try:
+            # Test connection with simple query
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        except (psycopg2.OperationalError, psycopg2.InterfaceError):
+            print("⚠️ Database connection lost, reconnecting...")
+            self._connect_db()
     
     def embed_image(self, image: Image.Image) -> np.ndarray:
         """
@@ -129,6 +145,9 @@ class ImageSearchService:
         Returns:
             List of ImageSearchResult objects
         """
+        # Ensure database connection is valid
+        self._ensure_connection()
+        
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
             sql = """
                 SELECT 
