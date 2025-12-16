@@ -1,1 +1,0 @@
-"""LocalMate Backend Application."""

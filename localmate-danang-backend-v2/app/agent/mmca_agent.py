@@ -22,26 +22,31 @@ from app.shared.integrations.megallm_client import MegaLLMClient
 # Default coordinates for Da Nang (if no location specified)
 DANANG_CENTER = (16.0544, 108.2022)
 
-# System prompt for the agent (from phase1.md)
-SYSTEM_PROMPT = """Bạn là một trợ lý du lịch thông minh cho Đà Nẵng. Bạn có quyền truy cập vào 3 công cụ qua MCP:
+# System prompt for the agent - balanced for all 3 tools
+SYSTEM_PROMPT = """Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Bạn có 3 công cụ tìm kiếm:
 
-1. **retrieve_context_text**: Tìm kiếm thông tin chi tiết, mô tả, đánh giá, menu từ văn bản.
-   - Dùng khi: người dùng hỏi về nội dung, review, menu, mô tả.
-   - Ví dụ: "Tìm quán có Phở ngon", "Quán nào được review tốt"
+**1. retrieve_context_text** - Tìm kiếm văn bản thông minh
+   - Khi nào: Hỏi về menu, review, mô tả, đặc điểm, phong cách
+   - Ví dụ: "Phở ngon giá rẻ", "Quán cafe view đẹp", "Nơi lãng mạn hẹn hò"
+   - Đặc biệt: Tự động phát hiện category (cafe, pho, seafood...) và boost kết quả
 
-2. **retrieve_similar_visuals**: Tìm địa điểm có hình ảnh tương tự.
-   - Dùng khi: người dùng gửi ảnh hoặc mô tả về không gian, decor, phong cách.
-   - Ví dụ: "Tìm quán có không gian giống ảnh này"
+**2. retrieve_similar_visuals** - Tìm theo hình ảnh
+   - Khi nào: Người dùng gửi ảnh hoặc mô tả về không gian, decor
+   - Scene filter: food, interior, exterior, view
+   - Ví dụ: "Quán có không gian giống ảnh này"
 
-3. **find_nearby_places**: Tìm địa điểm gần một vị trí.
-   - Dùng khi: người dùng hỏi về vị trí, khoảng cách, "gần đây".
-   - Ví dụ: "Quán cafe gần khách sạn Rex", "Nhà hàng gần bãi biển Mỹ Khê"
+**3. find_nearby_places** - Tìm theo vị trí
+   - Khi nào: Hỏi về khoảng cách, "gần đây", "gần X", "quanh Y"
+   - Ví dụ: "Quán cafe gần Cầu Rồng", "Nhà hàng gần bãi biển Mỹ Khê"
+   - Đặc biệt: Có thể lấy chi tiết đầy đủ với photos, reviews
 
-**Quy tắc:**
-- Phân tích intent của người dùng để chọn đúng tool
-- Có thể gọi nhiều tools tuần tự để tổng hợp câu trả lời
-- Trả lời bằng tiếng Việt, thân thiện và hữu ích
-- Luôn cung cấp thông tin cụ thể (tên quán, địa chỉ, rating nếu có)
+**Quy tắc quan trọng:**
+1. Phân tích intent để chọn ĐÚNG tool (không chỉ dùng 1 tool)
+2. Với câu hỏi tổng quát ("quán cafe ngon") → dùng retrieve_context_text
+3. Với câu hỏi vị trí ("gần X", "quanh Y") → dùng find_nearby_places
+4. Với ảnh → dùng retrieve_similar_visuals
+5. Có thể kết hợp nhiều tools để có kết quả tốt nhất
+6. Trả lời tiếng Việt, thân thiện, cung cấp thông tin cụ thể (tên, rating, khoảng cách)
 """
 
 
@@ -202,8 +207,12 @@ class MMCAAgent:
                 tool_call.result = [
                     {
                         "place_id": r.place_id,
+                        "name": r.name,
+                        "category": r.category,
+                        "rating": r.rating,
                         "similarity": r.similarity,
-                        "metadata": r.metadata,
+                        "description": r.description,
+                        "source_text": r.source_text,
                     }
                     for r in results
                 ]
@@ -211,14 +220,18 @@ class MMCAAgent:
             elif tool_call.tool_name == "retrieve_similar_visuals":
                 results = await self.tools.retrieve_similar_visuals(
                     db=db,
-                    image_url=tool_call.arguments.get("image_url", ""),
+                    image_url=tool_call.arguments.get("image_url"),
                     limit=tool_call.arguments.get("limit", 10),
                 )
                 tool_call.result = [
                     {
                         "place_id": r.place_id,
+                        "name": r.name,
+                        "category": r.category,
+                        "rating": r.rating,
                         "similarity": r.similarity,
-                        "metadata": r.metadata,
+                        "matched_images": r.matched_images,
+                        "image_url": r.image_url,
                     }
                     for r in results
                 ]

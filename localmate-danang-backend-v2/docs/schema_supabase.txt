@@ -53,15 +53,40 @@ CREATE TABLE public.itinerary_stops (
   CONSTRAINT itinerary_stops_pkey PRIMARY KEY (id),
   CONSTRAINT itinerary_stops_itinerary_id_fkey FOREIGN KEY (itinerary_id) REFERENCES public.itineraries(id)
 );
-CREATE TABLE public.place_embeddings (
+CREATE TABLE public.place_image_embeddings (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  place_id text NOT NULL UNIQUE,
-  text_embedding USER-DEFINED,
-  image_embedding USER-DEFINED,
+  place_id text NOT NULL,
+  embedding USER-DEFINED,
+  image_url text,
   metadata jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT place_embeddings_pkey PRIMARY KEY (id)
+  CONSTRAINT place_image_embeddings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.place_text_embeddings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  place_id text NOT NULL,
+  embedding USER-DEFINED,
+  content_type text,
+  source_text text,
+  metadata jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT place_text_embeddings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.places_metadata (
+  place_id text NOT NULL,
+  name text NOT NULL,
+  name_vi text,
+  category text,
+  address text,
+  rating numeric,
+  price_min numeric,
+  price_max numeric,
+  tags ARRAY DEFAULT '{}'::text[],
+  coordinates USER-DEFINED,
+  raw_data jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT places_metadata_pkey PRIMARY KEY (place_id)
 );
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
@@ -74,4 +99,12 @@ CREATE TABLE public.profiles (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.spatial_ref_sys (
+  srid integer NOT NULL CHECK (srid > 0 AND srid <= 998999),
+  auth_name character varying,
+  auth_srid integer,
+  srtext character varying,
+  proj4text character varying,
+  CONSTRAINT spatial_ref_sys_pkey PRIMARY KEY (srid)
 );

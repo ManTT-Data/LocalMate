@@ -17,8 +17,16 @@ from app.shared.integrations.neo4j_client import neo4j_client
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown."""
-    # Startup
+    # Startup - preload SigLIP model
+    try:
+        from app.shared.integrations.siglip_client import get_siglip_client
+        siglip = get_siglip_client()
+        print(f"✅ SigLIP ready: {siglip.is_loaded}")
+    except Exception as e:
+        print(f"⚠️ SigLIP not loaded (image search disabled): {e}")
+    
     yield
+    
     # Shutdown
     await neo4j_client.close()
     await engine.dispose()

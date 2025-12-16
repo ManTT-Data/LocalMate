@@ -1,6 +1,12 @@
-"""Embedding client for text and image embeddings."""
+"""Embedding client for text and image embeddings.
+
+Supports:
+- Text: Google text-embedding-004 (768-dim)
+- Image: HuggingFace CLIP/SigLIP (512/768-dim)
+"""
 
 import httpx
+from io import BytesIO
 from google import genai
 
 from app.core.config import settings
@@ -69,6 +75,38 @@ class EmbeddingClient:
                     "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32",
                     headers={"Authorization": f"Bearer {self.hf_api_key}"},
                     json={"inputs": {"image": image_url}},
+                    timeout=30.0,
+                )
+                if response.status_code == 200:
+                    return response.json()
+                return None
+        except Exception:
+            return None
+
+    async def embed_image_bytes(self, image_bytes: bytes) -> list[float] | None:
+        """
+        Generate image embedding from raw image bytes.
+
+        Args:
+            image_bytes: Raw image bytes (JPEG, PNG, etc.)
+
+        Returns:
+            512-dimensional embedding vector, or None if failed
+        """
+        if not self.hf_api_key:
+            return None
+
+        try:
+            import base64
+            # Convert bytes to base64 data URL
+            b64_image = base64.b64encode(image_bytes).decode('utf-8')
+            data_url = f"data:image/jpeg;base64,{b64_image}"
+
+            async with httpx.AsyncClient() as http_client:
+                response = await http_client.post(
+                    "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32",
+                    headers={"Authorization": f"Bearer {self.hf_api_key}"},
+                    json={"inputs": {"image": data_url}},
                     timeout=30.0,
                 )
                 if response.status_code == 200:

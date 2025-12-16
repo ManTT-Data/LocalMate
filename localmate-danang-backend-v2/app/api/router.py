@@ -2,7 +2,7 @@
 
 from enum import Enum
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.mmca_agent import MMCAAgent
@@ -298,3 +298,78 @@ async def get_history_info(user_id: str) -> HistoryResponse:
         current_session="default" if "default" in sessions else (sessions[0] if sessions else None),
         message_count=len(messages),
     )
+
+
+class ImageSearchResult(BaseModel):
+    """Image search result model."""
+
+    place_id: str
+    name: str
+    category: str | None = None
+    rating: float | None = None
+    similarity: float
+    matched_images: int = 1
+    image_url: str | None = None
+
+
+class ImageSearchResponse(BaseModel):
+    """Image search response model."""
+
+    results: list[ImageSearchResult]
+    total: int
+
+
+@router.post(
+    "/search/image",
+    response_model=ImageSearchResponse,
+    summary="Search places by image",
+    description="""
+Upload an image to find visually similar places.
+
+Uses image embeddings stored in Supabase pgvector.
+""",
+)
+async def search_by_image(
+    image: UploadFile = File(..., description="Image file to search"),
+    limit: int = Query(10, ge=1, le=50, description="Maximum results"),
+    db: AsyncSession = Depends(get_db),
+) -> ImageSearchResponse:
+    """
+    Search places by uploading an image.
+
+    Uses visual embeddings to find similar places.
+    """
+    try:
+        # Read image bytes
+        image_bytes = await image.read()
+
+        if len(image_bytes) > 10 * 1024 * 1024:  # 10MB limit
+            raise HTTPException(status_code=400, detail="Image too large (max 10MB)")
+
+        # Search using visual tool
+        results = await mcp_tools.search_by_image_bytes(
+            db=db,
+            image_bytes=image_bytes,
+            limit=limit,
+        )
+
+        return ImageSearchResponse(
+            results=[
+                ImageSearchResult(
+                    place_id=r.place_id,
+                    name=r.name,
+                    category=r.category,
+                    rating=r.rating,
+                    similarity=r.similarity,
+                    matched_images=r.matched_images,
+                    image_url=r.image_url,
+                )
+                for r in results
+            ],
+            total=len(results),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image search error: {str(e)}")
+

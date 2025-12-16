@@ -18,6 +18,11 @@ dependencies = [
     "pgvector>=0.3.0",
     "python-dotenv>=1.0.0",
     "httpx>=0.28.0",
+    "python-multipart>=0.0.9",
+    # Image embedding (SigLIP local)
+    "torch>=2.0.0",
+    "open_clip_torch>=2.24.0",
+    "pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
