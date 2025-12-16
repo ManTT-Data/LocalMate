@@ -7,10 +7,21 @@ import {
   Avatar,
   Divider,
 } from "@mantine/core";
+import { Link, useLocation } from "react-router-dom";
 import { IconBell, IconMapSearch } from "@tabler/icons-react";
-import { navigationLinks, userProfile } from "../../../data/mockData";
+import { userProfile } from "../../../data/mockData";
+
+// Navigation links (moved from mockData.js)
+const navigationLinks = [
+  { id: 1, label: "Home", href: "/", active: false },
+  { id: 2, label: "My Trips", href: "/ai-itinerary", active: false },
+  { id: 3, label: "My Bookings", href: "/bookings", active: false },
+  { id: 4, label: "Saved Places", href: "/saved", active: false },
+];
 
 const Header = ({ onToggleDarkMode, isDarkMode }) => {
+  const location = useLocation();
+
   return (
     <Group
       h={60}
@@ -33,21 +44,26 @@ const Header = ({ onToggleDarkMode, isDarkMode }) => {
       <Group gap="xl">
         {/* Navigation Links */}
         <Group gap="xl" visibleFrom="md">
-          {navigationLinks.map((link) => (
-            <Anchor
-              key={link.id}
-              href={link.href}
-              fw={link.active ? 600 : 500}
-              c={link.active ? "dark" : "dimmed"}
-              underline="never"
-              size="sm"
-              style={{
-                transition: "color 0.2s",
-              }}
-            >
-              {link.label}
-            </Anchor>
-          ))}
+          {navigationLinks.map((link) => {
+            const isActive = location.pathname === link.href;
+
+            return (
+              <Anchor
+                key={link.id}
+                component={Link}
+                to={link.href}
+                fw={isActive ? 600 : 500}
+                c={isActive ? "dark" : "dimmed"}
+                underline="never"
+                size="sm"
+                style={{
+                  transition: "color 0.2s",
+                }}
+              >
+                {link.label}
+              </Anchor>
+            );
+          })}
         </Group>
 
         {/* Divider */}

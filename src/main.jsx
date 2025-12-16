@@ -9,11 +9,14 @@ import "@mantine/dates/styles.css";
 import "@mantine/dropzone/styles.css";
 import "@mantine/notifications/styles.css";
 import App from "./App.jsx";
+import { PlanProvider } from "./contexts/PlanContext";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <PlanProvider>
+        <App />
+      </PlanProvider>
     </BrowserRouter>
   </StrictMode>
 );

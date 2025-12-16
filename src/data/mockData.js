@@ -1,5 +1,7 @@
 // Mock Data for Da Nang Tourism Super Agent
 
+import { href } from "react-router-dom";
+
 export const userProfile = {
   name: "Traveler",
   avatar:
@@ -8,7 +10,7 @@ export const userProfile = {
 };
 
 export const aiAgent = {
-  name: "Local Agent",
+  name: "Super Agent",
   avatar:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBPT4cRaJeVkKTOOImkcsyQXerboBrqLHhuLLV1t-i9YjdYe2FxKPsUxgthNKtXtbmg6q-c5tIcmJc-AS_8QDaOa9syh65MFnSf8WOoCtGXRpDBlqts1VUW5XcPN4kgUwAFkJ6yekABQ8o78dntl19IDXJ_8n8lZ0Sm-ONw8dKxG5uOqjDZpJ7QvRXm4IzmVM70xbc66qDQgxHw-cCxV0suqbDqDBKtgMCfB43hPI61zl2UyFaJTNuJtwcb7snC7e2zRmQisB9d8FRk",
 };
@@ -40,46 +42,103 @@ export const chatMessages = [
     type: "ai",
     sender: aiAgent,
     content:
-      "Great choice! The Marble Mountains (Ngũ Hành Sơn) are beautiful this time of day.",
+      "I've added **Marble Mountains** to your itinerary for this morning. It's best to visit early to avoid the heat.\n\nI also found a highly-rated **Mì Quảng** place nearby for lunch. Check the updated itinerary on the right!",
     timestamp: "9:42 AM",
-    hasInfoCard: true,
-    infoCard: {
-      name: "Marble Mountains",
-      image:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuBrrTDjrH1hvbtNSdknnos-WIrvVccd2Ryt5RsDQhP2DprYZ2zz-wMDHV4TJXjTKPoISFoHRzRdpU447YYJCtNvC7LYtmpHHZXUsRUNYu0_d7XPyZQ3ESCmspngn3DH-0GkZYVKeuJSNUAZIPRQh6C07uwK_MCy7JeRfKsHh-NQdgbuaXe6YB3cdAEjBV3J8jE9Jhjaf6Q2tupEjzSJo0zO4HU4iJostMn9TZBsLKD2SE81FRXKLkkQ-I2JjR2bR9uwYkoL0Y7qnwFq",
-      rating: 4.6,
-      reviews: "2.4k",
-      openUntil: "5:30 PM",
-    },
     additionalText:
-      "I've mapped a route for you. It's a **20-minute drive** from your current location.\n\nA GrabCar is available for roughly **150k VND**. Check the details on the right panel.",
+      '<button class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2 text-primary dark:text-sky-400 text-sm font-semibold w-full flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"><span>View Itinerary Details</span><span class="material-symbols-outlined text-[16px]">arrow_right_alt</span></button>',
   },
 ];
+
+export const tripMetadata = {
+  title: "Da Nang Cultural Tour",
+  dateRange: "Dec 15 - Dec 17",
+  duration: "3 days",
+};
 
 export const destinations = [
   {
     id: "marble-mountains",
     name: "Marble Mountains",
-    description:
-      "A cluster of five marble and limestone hills located in Ngũ Hành Sơn District, south of Da Nang city.",
+    description: "Limestone hills with caves & temples.",
     image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuADIyE03c13yakVCeeoFPOtTxrU3zh4BY2IYmSYUfbWlzsFy78UIDIwGNGOvQL5SJRa-cPaf6hHXmG-SH4xJTIfxXoxd9YTGsBIJ6DXP-luwo9SAuJaJ4gDTBAs_EduNwDOtnzcrOJQUOy8c9v0disPQBFh4dlP7eph8lT42iVyvzB7HGFplf1Qr3-SJ6wFEMbuF-IGxttJmVGdCMRDVStlEn5jkiztnx6fX-iXtCacuQSMx4HuTi6Y43IZBbSnbnocD4mN8tCWkFzt",
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBrrTDjrH1hvbtNSdknnos-WIrvVccd2Ryt5RsDQhP2DprYZ2zz-wMDHV4TJXjTKPoISFoHRzRdpU447YYJCtNvC7LYtmpHHZXUsRUNYu0_d7XPyZQ3ESCmspngn3DH-0GkZYVKeuJSNUAZIPRQh6C07uwK_MCy7JeRfKsHh-NQdgbuaXe6YB3cdAEjBV3J8jE9Jhjaf6Q2tupEjzSJo0zO4HU4iJostMn9TZBsLKD2SE81FRXKLkkQ-I2JjR2bR9uwYkoL0Y7qnwFq",
     location: { lat: 16.0019, lng: 108.2626 },
     rating: 4.6,
     reviews: 2400,
+    type: "Sightseeing",
+    duration: "1.5 hrs",
+    cost: "40k VND",
+    photoCount: "1.2k",
     openNow: true,
-    openUntil: "5:30 PM",
-    duration: "20 min",
     entryFee: "40k VND",
-    photoCount: 12,
-    icon: "temple_buddhist",
+  },
+  {
+    id: "mi-quang-ba-mua",
+    name: "Mì Quảng Bà Mua",
+    location: { lat: 16.05653, lng: 108.2084 }, // Approximate
+    description: "Local Cuisine • Lunch",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAuajKaysFsmhJPOzOEjqvmfqsx1AoKro4zAldb3m5FqXTW1tPjZMjHRaTGK4tj06JrqVgK1DbrQvJwTQSRuesuytCrB1Ed1PWqO05X5u8JgHG_chdTmnxejPsUfkYv2zcHTSkJv9F3aAzLIWp1Y4LOEhq0jBWiZDvCPF7iSlZ2v-Iy30tvPS8xbvm2vzT4xkIj7l3CmNNoxgLoXGFGfUSw2fzx5rJxUHW-dvDJsjJ4MU-UithTvjB0lGsV_Dnv9hENY_CaaxldwpNI",
+    rating: 4.5,
+    type: "Restaurant",
+    isTopPick: true,
+    duration: "1 hr",
+    photoCount: "850",
+    openNow: true,
+    entryFee: "Free",
   },
 ];
 
-export const suggestionChips = [
-  { id: 1, icon: "restaurant", label: "Seafood nearby" },
-  { id: 2, icon: "local_cafe", label: "Coffee shops" },
-  { id: 3, icon: "local_taxi", label: "Book ride" },
+export const itineraryItems = [
+  {
+    day: 1,
+    title: "Cultural Exploration",
+    date: "Oct 24",
+    totalCost: "1.2m VND",
+    totalTime: "45 mins",
+    stops: [
+      {
+        id: "start",
+        time: "08:30 AM",
+        type: "start",
+        name: "Start from Hotel",
+        locationName: "Hyatt Regency Danang",
+        location: { lat: 16.012855984, lng: 108.263785 },
+        nextTravel: {
+          type: "drive",
+          duration: "20 min",
+          mode: "car",
+        },
+      },
+      {
+        id: "marble-mountains",
+        time: "09:00 AM",
+        type: "destination",
+        destinationId: "marble-mountains", // Links to destinations array
+        destination: destinations[0],
+        nextTravel: {
+          type: "drive",
+          duration: "10 min",
+          mode: "taxi",
+          label: "Book Grab",
+          price: "150k VND", // Assumed based on HTML
+        },
+      },
+      {
+        id: "lunch-mi-quang",
+        time: "11:00 AM",
+        type: "destination",
+        destinationId: "mi-quang-ba-mua",
+        destination: destinations[1],
+        isTopPick: true,
+      },
+    ],
+  },
+  {
+    day: 2,
+    title: "Beach & Relaxation",
+    date: "Oct 25",
+  },
 ];
 
 export const grabBooking = {
@@ -91,21 +150,13 @@ export const grabBooking = {
     "https://lh3.googleusercontent.com/aida-public/AB6AXuArh9M0CbTeNgekUl-epGu9t3dIh2yKDlknPlDSb-U3hd8aAGBa1kEEVNKHmyaXDPtPqexVTB6F217yQj-KZEzcp4nMWS9DpBiYPXLAthiEST93RqbkRDgJk1WyJgZVvPx2yRPiFjzOY_TBlM95dobRkfe029FsNPGaSerUAeHBXfVLwzALPRmCmX2DC7vg3BfRseE3kBL5dOkcfkSg6kHiQSXaJPh6q-sYGJzjvoEUwhohg7jUcr0CXFxMkHWCVG_xmIGKcuvq0E7t",
 };
 
+export const suggestionChips = [
+  { id: 1, icon: "add_location", label: "Add stop" },
+  { id: 2, icon: "schedule", label: "Change time" },
+];
+
 export const tripContext = {
   type: "Cultural Visit",
   budget: "Moderate Budget",
   icon: "temple_buddhist",
 };
-
-export const navigationLinks = [
-  { id: 1, label: "Home", href: "#", active: true },
-  { id: 2, label: "My Trips", href: "#", active: false },
-  { id: 3, label: "My bookings", href: "#", active: false },
-  { id: 4, label: "Saved Places", href: "#", active: false },
-];
-
-export const contextualTabs = [
-  { id: 1, label: "Map View", icon: "map", active: true },
-  { id: 2, label: "Itinerary", icon: "calendar_month", active: false },
-  { id: 3, label: "Bookings", icon: "receipt_long", active: false },
-];

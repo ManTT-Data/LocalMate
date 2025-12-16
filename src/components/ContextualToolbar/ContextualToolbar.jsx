@@ -1,48 +1,48 @@
 import React from "react";
 import { Paper, Group, Button } from "@mantine/core";
-import { contextualTabs } from "../../data/mockData";
+import { Link, useLocation } from "react-router-dom";
+import { IconMap, IconCalendar, IconReceipt } from "@tabler/icons-react";
 
-const ContextualToolbar = ({ activeTab, onTabChange }) => {
+// Contextual tabs data (moved from mockData.js)
+const contextualTabs = [
+  { id: 1, label: "Map View", icon: IconMap, href: "/" },
+  { id: 2, label: "Itinerary", icon: IconCalendar, href: "/ai-itinerary" },
+  { id: 3, label: "Bookings", icon: IconReceipt, href: "#" },
+];
+
+const ContextualToolbar = () => {
+  const location = useLocation();
+
   return (
     <Paper
       ml={32}
       p={4}
-      radius="lg"
-      shadow="sm"
+      radius="xl"
+      shadow="xs"
       withBorder
-      style={{
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        backdropFilter: "blur(12px)",
-        pointerEvents: "auto",
-      }}
+      bg="rgba(255, 255, 255, 0.9)"
+      style={{ pointerEvents: "auto", backdropFilter: "blur(10px)" }}
     >
-      <Group gap={4}>
-        {contextualTabs.map((tab) => (
-          <Button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            variant={activeTab === tab.id ? "light" : "subtle"}
-            color={activeTab === tab.id ? "black" : "gray"}
-            size="sm"
-            radius="md"
-            leftSection={
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "18px" }}
-              >
-                {tab.icon}
-              </span>
-            }
-            styles={{
-              root: {
-                fontWeight: activeTab === tab.id ? 600 : 500,
-                transition: "all 0.2s",
-              },
-            }}
-          >
-            {tab.label}
-          </Button>
-        ))}
+      <Group gap="xs">
+        {contextualTabs.map((tab) => {
+          const isActive = location.pathname === tab.href;
+          const IconComponent = tab.icon;
+
+          return (
+            <Button
+              key={tab.id}
+              component={Link}
+              to={tab.href}
+              variant={isActive ? "light" : "subtle"}
+              color={isActive ? "black" : "gray"}
+              size="xs"
+              radius="lg"
+              leftSection={<IconComponent size={18} />}
+            >
+              {tab.label}
+            </Button>
+          );
+        })}
       </Group>
     </Paper>
   );

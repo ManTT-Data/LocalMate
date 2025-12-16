@@ -1,11 +1,35 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Box, Group, TextInput, ActionIcon, Button } from "@mantine/core";
 import { IconMicrophone, IconPhoto, IconSend } from "@tabler/icons-react";
 import SuggestionChip from "../SuggestionChip/SuggestionChip";
-import { suggestionChips } from "../../data/mockData";
 
 const MessageComposer = ({ onSendMessage }) => {
   const [message, setMessage] = useState("");
+  const location = useLocation();
+
+  // Define suggestion chips based on current page
+  const getSuggestionChips = () => {
+    // AiMapView page (home)
+    if (location.pathname === "/") {
+      return [
+        { id: 1, icon: "restaurant", label: "Seafood nearby" },
+        { id: 2, icon: "local_cafe", label: "Coffee shops" },
+        { id: 3, icon: "local_taxi", label: "Book ride" },
+      ];
+    }
+    // AiItinerary page
+    else if (location.pathname === "/ai-itinerary") {
+      return [
+        { id: 1, icon: "add_location", label: "Add stop" },
+        { id: 2, icon: "schedule", label: "Change time" },
+      ];
+    }
+    // Default fallback
+    return [];
+  };
+
+  const suggestionChips = getSuggestionChips();
 
   const handleSend = () => {
     if (message.trim()) {
