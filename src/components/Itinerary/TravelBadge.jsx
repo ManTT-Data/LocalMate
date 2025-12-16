@@ -25,6 +25,7 @@ const TravelBadge = ({ travel, onBook }) => {
       pos="absolute"
       left={16}
       bottom={8}
+      pb={16}
       style={{ zIndex: Z_INDEX.TRAVEL_BADGE, transform: "translateY(50%)" }}
     >
       <Badge
@@ -32,7 +33,7 @@ const TravelBadge = ({ travel, onBook }) => {
         color="gray"
         size="sm"
         bg="white"
-        leftSection={<IconCar size={12} />}
+        leftSection={<IconCar size={12} color="green" />}
         style={{
           textTransform: "none",
           fontWeight: 500,

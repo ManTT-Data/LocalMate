@@ -6,13 +6,11 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import useItineraryStore from "../../stores/useItineraryStore";
 import DayHeader from "./DayHeader";
 import TimelineStop from "./TimelineStop";
-import PlanItem from "./PlanItem";
 import { DND_TYPES, COLORS, SIZES, Z_INDEX } from "./constants";
 
 const ItineraryList = ({ onItemClick }) => {
   // Use unified Zustand store
-  const { itineraryItems, reorderStops, plan, removeItem, reorderPlanItems } =
-    useItineraryStore();
+  const { itineraryItems, reorderStops } = useItineraryStore();
 
   // Memoized drag end handler for better performance
   const handleDragEnd = useCallback(
@@ -50,13 +48,7 @@ const ItineraryList = ({ onItemClick }) => {
         reorderStops(dayIndex, dayStops);
       }
     },
-    [plan.items, itineraryItems, reorderPlanItems, reorderStops]
-  );
-
-  // Memoized computation to check if there are any plan items
-  const hasPlanItems = useMemo(
-    () => plan.items.length > 0,
-    [plan.items.length]
+    [itineraryItems, reorderStops]
   );
 
   return (
@@ -130,47 +122,6 @@ const ItineraryList = ({ onItemClick }) => {
                     </Box>
                   )}
                 </Droppable>
-              )}
-
-              {/* Dynamic plan items with DnD */}
-              {hasPlanItems && (
-                <Box mb="md">
-                  <Text
-                    size="sm"
-                    fw={700}
-                    c="blue"
-                    mb="xs"
-                    pl={SIZES.CONTENT_PADDING_LEFT}
-                  >
-                    Your Added Places
-                  </Text>
-                  <Droppable
-                    droppableId="plan-items"
-                    type={DND_TYPES.PLAN_ITEMS}
-                  >
-                    {(provided) => (
-                      <Box {...provided.droppableProps} ref={provided.innerRef}>
-                        {plan.items.map((item, index) => (
-                          <Draggable
-                            key={item.itemId}
-                            draggableId={item.itemId}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <PlanItem
-                                item={item}
-                                provided={provided}
-                                snapshot={snapshot}
-                                onRemove={removeItem}
-                              />
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </Box>
-                    )}
-                  </Droppable>
-                </Box>
               )}
 
               <Box pl={SIZES.CONTENT_PADDING_LEFT} pt="xs">

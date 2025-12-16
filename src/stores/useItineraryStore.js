@@ -198,18 +198,48 @@ const useItineraryStore = create(
        */
       removeStop: (dayIndex, stopId) => {
         const items = [...get().itineraryItems];
-        if (items[dayIndex]) {
-          items[dayIndex] = {
-            ...items[dayIndex],
-            stops: items[dayIndex].stops.filter((s) => s.id !== stopId),
-          };
-          set({ itineraryItems: items });
+        if (!items[dayIndex]) return;
 
-          // Clear route cache for this day
-          const routeCache = { ...get().routeCache };
-          delete routeCache[dayIndex];
-          set({ routeCache });
+        const stops = [...items[dayIndex].stops];
+        const stopIndex = stops.findIndex((s) => s.id === stopId);
+
+        if (stopIndex === -1) return;
+
+        // Remove the stop
+        stops.splice(stopIndex, 1);
+
+        // Recalculate nextTravel for previous stop
+        if (stopIndex > 0 && stopIndex < stops.length) {
+          // There's a stop after the removed one - update previous stop's nextTravel
+          stops[stopIndex - 1] = {
+            ...stops[stopIndex - 1],
+            nextTravel: {
+              type: "drive",
+              duration: "15 min",
+              mode: "taxi",
+              label: "Book Grab",
+              price: "50k VND",
+              bookable: true,
+            },
+          };
+        } else if (stopIndex > 0) {
+          // Removed last stop - clear previous stop's nextTravel
+          stops[stopIndex - 1] = {
+            ...stops[stopIndex - 1],
+            nextTravel: undefined,
+          };
         }
+
+        items[dayIndex] = {
+          ...items[dayIndex],
+          stops,
+        };
+        set({ itineraryItems: items });
+
+        // Clear route cache for this day
+        const routeCache = { ...get().routeCache };
+        delete routeCache[dayIndex];
+        set({ routeCache });
       },
 
       /**
@@ -233,6 +263,62 @@ const useItineraryStore = create(
             set({ itineraryItems: items });
           }
         }
+      },
+
+      /**
+       * Add destination to itinerary with automatic travel management
+       * @param {number} dayIndex - Day to add to
+       * @param {Object} destination - Destination to add
+       */
+      addDestinationToItinerary: (dayIndex, destination) => {
+        const items = [...get().itineraryItems];
+        if (!items[dayIndex]) return;
+
+        const stops = [...items[dayIndex].stops];
+        const newStopId = `dest-${Date.now()}`;
+
+        // Create new stop
+        const newStop = {
+          id: newStopId,
+          time: "TBD", // TODO: Calculate based on previous stop
+          type: "destination",
+          destinationId: destination.id,
+          destination: destination,
+          isBooked: false,
+          bookingDetails: {
+            type: "ticket",
+            bookable: true,
+          },
+        };
+
+        // Find insertion point (before last stop or at end)
+        const insertIndex = stops.length;
+
+        // Update previous stop's nextTravel if exists
+        if (insertIndex > 0) {
+          stops[insertIndex - 1] = {
+            ...stops[insertIndex - 1],
+            nextTravel: {
+              type: "drive",
+              duration: "15 min",
+              mode: "taxi",
+              label: "Book Grab",
+              price: "50k VND",
+              bookable: true,
+            },
+          };
+        }
+
+        // Insert new stop
+        stops.splice(insertIndex, 0, newStop);
+
+        items[dayIndex] = { ...items[dayIndex], stops };
+        set({ itineraryItems: items });
+
+        // Clear route cache
+        const routeCache = { ...get().routeCache };
+        delete routeCache[dayIndex];
+        set({ routeCache });
       },
 
       // ========== Plan Management Actions (migrated from PlanContext) ==========

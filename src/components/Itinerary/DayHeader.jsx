@@ -15,11 +15,11 @@ const DayHeader = ({ day, title, date }) => {
         // position: "sticky",
         top: 0,
         zIndex: Z_INDEX.STICKY_HEADER,
-        borderBottom: "1px solid var(--mantine-color-gray-1)",
+        borderBottom: "1px solid var(--neutral-900)",
       }}
     >
       <Group gap="xs">
-        <Badge color="blue" variant="light" size="lg" radius="sm">
+        <Badge color="black" variant="outline" size="lg" radius="sm">
           Day {day}
         </Badge>
         <Text fw={700} size="md">

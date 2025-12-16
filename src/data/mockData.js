@@ -75,7 +75,7 @@ export const destinations = [
   {
     id: "mi-quang-ba-mua",
     name: "Mì Quảng Bà Mua",
-    location: { lat: 16.05653, lng: 108.2084 }, // Approximate
+    location: { lat: 16.05653, lng: 108.2084 },
     description: "Local Cuisine • Lunch",
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuAuajKaysFsmhJPOzOEjqvmfqsx1AoKro4zAldb3m5FqXTW1tPjZMjHRaTGK4tj06JrqVgK1DbrQvJwTQSRuesuytCrB1Ed1PWqO05X5u8JgHG_chdTmnxejPsUfkYv2zcHTSkJv9F3aAzLIWp1Y4LOEhq0jBWiZDvCPF7iSlZ2v-Iy30tvPS8xbvm2vzT4xkIj7l3CmNNoxgLoXGFGfUSw2fzx5rJxUHW-dvDJsjJ4MU-UithTvjB0lGsV_Dnv9hENY_CaaxldwpNI",
@@ -84,6 +84,54 @@ export const destinations = [
     isTopPick: true,
     duration: "1 hr",
     photoCount: "850",
+    openNow: true,
+    entryFee: "Free",
+  },
+  {
+    id: "ba-na-hills",
+    name: "Bà Nà Hills",
+    description: "Mountain resort with Golden Bridge",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDHpvF5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5K5j8",
+    location: { lat: 15.9943, lng: 107.9988 },
+    rating: 4.8,
+    reviews: 8500,
+    type: "Theme Park",
+    duration: "4 hrs",
+    cost: "700k VND",
+    photoCount: "5.2k",
+    openNow: true,
+    entryFee: "700k VND",
+  },
+  {
+    id: "han-market",
+    name: "Hàn Market",
+    description: "Traditional market with local goods",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCKzOH9kOBKW4_h5F5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5K5j8hNqGd",
+    location: { lat: 16.0677, lng: 108.2208 },
+    rating: 4.3,
+    reviews: 1200,
+    type: "Shopping",
+    duration: "2 hrs",
+    cost: "Free",
+    photoCount: "890",
+    openNow: true,
+    entryFee: "Free",
+  },
+  {
+    id: "son-tra-peninsula",
+    name: "Sơn Trà Peninsula",
+    description: "Nature reserve with rare monkeys",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBNature5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5K5j8hNqGdX3jX1f5",
+    location: { lat: 16.1068, lng: 108.27 },
+    rating: 4.7,
+    reviews: 3400,
+    type: "Nature",
+    duration: "3 hrs",
+    cost: "Free",
+    photoCount: "2.1k",
     openNow: true,
     entryFee: "Free",
   },
@@ -106,8 +154,10 @@ export const itineraryItems = [
         location: { lat: 16.012855984, lng: 108.263785 },
         nextTravel: {
           type: "drive",
-          duration: "20 min",
-          mode: "car",
+          duration: "10 min",
+          mode: "taxi",
+          label: "Book Grab",
+          price: "20k VND", // Assumed based on HTML
         },
       },
       {
@@ -118,7 +168,7 @@ export const itineraryItems = [
         destination: destinations[0],
         nextTravel: {
           type: "drive",
-          duration: "10 min",
+          duration: "20 min",
           mode: "taxi",
           label: "Book Grab",
           price: "150k VND", // Assumed based on HTML

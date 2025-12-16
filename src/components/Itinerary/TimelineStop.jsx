@@ -14,7 +14,7 @@ const TimelineStop = ({ stop, onItemClick, provided, snapshot, dayIndex }) => {
   const isDragging = snapshot?.isDragging || false;
 
   // Zustand store
-  const { lastBookedStopId } = useItineraryStore();
+  const { lastBookedStopId, removeStop, updateStop } = useItineraryStore();
 
   // Booking modal state
   const [bookingModal, setBookingModal] = useState({
@@ -55,8 +55,22 @@ const TimelineStop = ({ stop, onItemClick, provided, snapshot, dayIndex }) => {
     // Empty function for now
   }, []);
 
+  // Memoize remove handler
+  const handleRemove = useCallback(() => {
+    if (dayIndex !== undefined && stop.id) {
+      removeStop(dayIndex, stop.id);
+    }
+  }, [dayIndex, stop.id, removeStop]);
+
+  // Memoize replace handler
+  const handleReplace = useCallback(() => {
+    // TODO: Open a modal or sidebar to select a new destination
+    console.log("Replace destination:", stop.id);
+    // For now, just log - you can implement a destination picker modal later
+  }, [stop.id]);
+
   const content = (
-    <Box pos="relative" pl={32} pb="lg" className="group">
+    <Box pos="relative" pl={32} pb={32} className="group">
       {/* Timeline Dot */}
       <TimelineDot
         type={stop.type === "destination" ? "destination" : "start"}
@@ -99,6 +113,8 @@ const TimelineStop = ({ stop, onItemClick, provided, snapshot, dayIndex }) => {
               bookingDetails={stop.bookingDetails}
               onBookTicket={handleBookTicket}
               onViewDetails={handleViewDetails}
+              onRemove={handleRemove}
+              onReplace={handleReplace}
             />
           ) : (
             <StartLocationCard

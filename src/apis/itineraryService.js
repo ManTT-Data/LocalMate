@@ -50,8 +50,11 @@ export const fetchItineraryFromBackend = async () => {
           isBooked: false,
           nextTravel: {
             type: "drive",
-            duration: "20 min",
-            mode: "car",
+            duration: "10 min",
+            mode: "taxi",
+            label: "Book Grab",
+            price: "20k VND",
+            bookable: true,
           },
         },
         {
@@ -68,7 +71,7 @@ export const fetchItineraryFromBackend = async () => {
           },
           nextTravel: {
             type: "drive",
-            duration: "10 min",
+            duration: "20 min",
             mode: "taxi",
             label: "Book Grab",
             price: "150k VND",
@@ -85,7 +88,7 @@ export const fetchItineraryFromBackend = async () => {
           isBooked: false,
           bookingDetails: {
             type: "reservation",
-            bookable: true,
+            bookable: false,
           },
         },
       ],
@@ -107,8 +110,11 @@ export const fetchItineraryFromBackend = async () => {
           isBooked: false,
           nextTravel: {
             type: "drive",
-            duration: "15 min",
-            mode: "car",
+            duration: "20 min",
+            mode: "taxi",
+            label: "Book Grab",
+            price: "10k VND",
+            bookable: true,
           },
         },
         {
@@ -163,7 +169,7 @@ export const fetchItineraryFromBackend = async () => {
           isBooked: false,
           bookingDetails: {
             type: "reservation",
-            bookable: true,
+            bookable: false,
           },
         },
       ],

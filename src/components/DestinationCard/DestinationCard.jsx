@@ -26,10 +26,35 @@ import useItineraryStore from "../../stores/useItineraryStore";
 
 const DestinationCard = ({ destination = destinations[0], onClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { plan, addItem } = useItineraryStore();
+  const { itineraryItems, addDestinationToItinerary } = useItineraryStore();
 
-  // Check if this destination is already in the plan
-  const isInPlan = plan.items.some((item) => item.placeId === destination.id);
+  // Check if this destination is already in the itinerary (any day)
+  const isInItinerary = itineraryItems.some((day) =>
+    day.stops?.some((stop) => stop.destinationId === destination.id)
+  );
+
+  console.log("DestinationCard render - itineraryItems:", itineraryItems);
+  console.log("DestinationCard render - destination.id:", destination.id);
+  console.log("DestinationCard render - isInItinerary:", isInItinerary);
+
+  const handleAddToItinerary = () => {
+    console.log("handleAddToItinerary called");
+    console.log("isInItinerary:", isInItinerary);
+    console.log("destination:", destination);
+    console.log(
+      "addDestinationToItinerary function:",
+      addDestinationToItinerary
+    );
+
+    if (!isInItinerary) {
+      console.log("Adding destination to itinerary...");
+      // Add to Day 1 (index 0) by default
+      addDestinationToItinerary(0, destination);
+      console.log("Destination added!");
+    } else {
+      console.log("Destination already in itinerary, skipping");
+    }
+  };
 
   return (
     <Paper
@@ -190,20 +215,20 @@ const DestinationCard = ({ destination = destinations[0], onClose }) => {
             </Anchor>
           </Group>
 
-          {/* Add to Plan Button */}
+          {/* Add to Itinerary Button */}
           <Button
             fullWidth
             mt="sm"
             size="sm"
-            variant={isInPlan ? "light" : "filled"}
-            color={isInPlan ? "green" : "blue"}
+            variant={isInItinerary ? "light" : "filled"}
+            color={isInItinerary ? "green" : "var(--neutral-900)"}
             leftSection={
-              isInPlan ? <IconCheck size={16} /> : <IconPlus size={16} />
+              isInItinerary ? <IconCheck size={16} /> : <IconPlus size={16} />
             }
-            onClick={() => !isInPlan && addItem(destination)}
-            disabled={isInPlan}
+            onClick={handleAddToItinerary}
+            disabled={isInItinerary}
           >
-            {isInPlan ? "Added to Plan" : "Add to Plan"}
+            {isInItinerary ? "Added to Itinerary" : "Add to Itinerary"}
           </Button>
         </Collapse>
       </Box>
