@@ -62,9 +62,9 @@ class PlannerAgent:
 
         Flow:
         1. Semantic Search for places matching interests
-        3. Optimize route using TSP
-        4. Generate title with LLM
-        5. Distribute across days
+        2. Optimize route using TSP
+        3. Generate title with LLM
+        4. Distribute across days
 
         Args:
             request: User's planning request
