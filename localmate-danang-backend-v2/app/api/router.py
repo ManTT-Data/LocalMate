@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.mmca_agent import MMCAAgent
+from app.agent.react_agent import ReActAgent
 from app.shared.db.session import get_db
 from app.core.config import settings
 from app.mcp.tools import mcp_tools
@@ -54,10 +55,39 @@ class ChatRequest(BaseModel):
         description=f"Model name. Defaults: Google={settings.default_gemini_model}, MegaLLM={settings.default_megallm_model}",
         examples=["gemini-2.0-flash", "deepseek-r1-distill-llama-70b"],
     )
+    react_mode: bool = Field(
+        default=False,
+        description="Enable ReAct multi-step reasoning mode",
+    )
+    max_steps: int = Field(
+        default=5,
+        description="Maximum reasoning steps for ReAct mode",
+        ge=1,
+        le=10,
+    )
+
+
+class WorkflowStepResponse(BaseModel):
+    """Workflow step info."""
+
+    step: str = Field(..., description="Step name")
+    tool: str | None = Field(None, description="Tool used")
+    purpose: str = Field(default="", description="Purpose of this step")
+    results: int = Field(default=0, description="Number of results")
+
+
+class WorkflowResponse(BaseModel):
+    """Workflow trace for debugging."""
+
+    query: str = Field(..., description="Original query")
+    intent_detected: str = Field(..., description="Detected intent")
+    tools_used: list[str] = Field(default_factory=list, description="Tools used")
+    steps: list[WorkflowStepResponse] = Field(default_factory=list, description="Workflow steps")
+    total_duration_ms: float = Field(..., description="Total processing time")
 
 
 class ChatResponse(BaseModel):
-    """Chat response model."""
+    """Chat response model with workflow trace."""
 
     response: str = Field(..., description="Agent's response")
     status: str = Field(default="success", description="Response status")
@@ -65,6 +95,9 @@ class ChatResponse(BaseModel):
     model: str = Field(..., description="Model used")
     user_id: str = Field(..., description="User ID")
     session_id: str = Field(..., description="Session ID used")
+    workflow: WorkflowResponse | None = Field(None, description="Workflow trace for debugging")
+    tools_used: list[str] = Field(default_factory=list, description="MCP tools used")
+    duration_ms: float = Field(default=0, description="Total processing time in ms")
 
 
 class NearbyRequest(BaseModel):
@@ -235,33 +268,94 @@ async def chat(
         session_id=session_id,
     )
 
-    # Create agent with specified provider and model
-    agent = MMCAAgent(provider=request.provider.value, model=model)
+    # Choose agent based on react_mode
+    if request.react_mode:
+        # ReAct multi-step agent
+        agent = ReActAgent(
+            provider=request.provider.value,
+            model=model,
+            max_steps=request.max_steps,
+        )
+        response_text, agent_state = await agent.run(
+            query=request.message,
+            db=db,
+            image_url=request.image_url,
+            history=history,
+        )
+        
+        # Convert state to workflow
+        workflow = agent.to_workflow(agent_state)
+        workflow_data = workflow.to_dict()
+        
+        # Add assistant response to history
+        chat_history.add_message(
+            user_id=request.user_id,
+            role="assistant",
+            content=response_text,
+            session_id=session_id,
+        )
+        
+        workflow_response = WorkflowResponse(
+            query=workflow_data["query"],
+            intent_detected=workflow_data["intent_detected"],
+            tools_used=workflow_data["tools_used"],
+            steps=[WorkflowStepResponse(**s) for s in workflow_data["steps"]],
+            total_duration_ms=workflow_data["total_duration_ms"],
+        )
+        
+        return ChatResponse(
+            response=response_text,
+            status="success",
+            provider=request.provider.value,
+            model=model,
+            user_id=request.user_id,
+            session_id=session_id,
+            workflow=workflow_response,
+            tools_used=workflow.tools_used,
+            duration_ms=agent_state.total_duration_ms,
+        )
+    
+    else:
+        # Single-step agent (original behavior)
+        agent = MMCAAgent(provider=request.provider.value, model=model)
 
-    # Pass history to agent
-    response = await agent.chat(
-        message=request.message,
-        db=db,
-        image_url=request.image_url,
-        history=history,
-    )
+        # Pass history to agent
+        result = await agent.chat(
+            message=request.message,
+            db=db,
+            image_url=request.image_url,
+            history=history,
+        )
 
-    # Add assistant response to history
-    chat_history.add_message(
-        user_id=request.user_id,
-        role="assistant",
-        content=response,
-        session_id=session_id,
-    )
+        # Add assistant response to history
+        chat_history.add_message(
+            user_id=request.user_id,
+            role="assistant",
+            content=result.response,
+            session_id=session_id,
+        )
 
-    return ChatResponse(
-        response=response,
-        status="success",
-        provider=request.provider.value,
-        model=model,
-        user_id=request.user_id,
-        session_id=session_id,
-    )
+        # Build workflow response
+        workflow_data = result.workflow.to_dict()
+        workflow_response = WorkflowResponse(
+            query=workflow_data["query"],
+            intent_detected=workflow_data["intent_detected"],
+            tools_used=workflow_data["tools_used"],
+            steps=[WorkflowStepResponse(**s) for s in workflow_data["steps"]],
+            total_duration_ms=workflow_data["total_duration_ms"],
+        )
+
+        return ChatResponse(
+            response=result.response,
+            status="success",
+            provider=request.provider.value,
+            model=model,
+            user_id=request.user_id,
+            session_id=session_id,
+            workflow=workflow_response,
+            tools_used=result.tools_used,
+            duration_ms=result.total_duration_ms,
+        )
 
 
 @router.post(

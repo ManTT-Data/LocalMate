@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalMate - Trợ lý Du lịch Đà Nẵng</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <!-- Header -->
+            <header class="header">
+                <div class="logo">
+                    <span class="logo-icon">🌴</span>
+                    <h1>LocalMate</h1>
+                </div>
+                <p class="tagline">Trợ lý Du lịch Thông minh - Đà Nẵng</p>
+            </header>
+
+            <!-- Chat Container -->
+            <main class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Welcome message -->
+                    <div class="message assistant">
+                        <div class="avatar">🤖</div>
+                        <div class="content">
+                            <p>Xin chào! Tôi là <strong>LocalMate</strong> - trợ lý du lịch thông minh.</p>
+                            <p>Tôi có thể giúp bạn:</p>
+                            <ul>
+                                <li>🔍 Tìm quán cafe, nhà hàng, khách sạn</li>
+                                <li>📍 Gợi ý địa điểm gần bạn</li>
+                                <li>📸 Tìm nơi tương tự từ ảnh</li>
+                            </ul>
+                            <p>Click <strong>+ Add</strong> để thêm địa điểm vào Plan!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <!-- Image Preview -->
+                    <div class="image-preview" id="imagePreview" style="display: none;">
+                        <img id="previewImg" src="" alt="Preview">
+                        <button class="remove-image" id="removeImage" title="Xóa ảnh">✕</button>
+                    </div>
+
+                    <!-- Input Container -->
+                    <div class="input-container">
+                        <label class="upload-btn" title="Tải ảnh lên">
+                            <input type="file" id="imageInput" accept="image/*" hidden>
+                            📷
+                        </label>
+                        <textarea id="messageInput" placeholder="Nhập tin nhắn... (VD: Quán cafe view đẹp)"
+                            rows="1"></textarea>
+                        <button class="send-btn" id="sendBtn" title="Gửi">
+                            <span>➤</span>
+                        </button>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="controls">
+                        <button class="clear-btn" id="clearBtn" title="Xóa lịch sử chat">
+                            🗑️ Xóa lịch sử
+                        </button>
+                        <button class="react-toggle" id="reactToggle" title="Toggle ReAct multi-step mode">
+                            🧠 ReAct: OFF
+                        </button>
+                        <div class="model-info">
+                            <span class="status-dot"></span>
+                            MegaLLM • deepseek-v3.1
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Plan Panel -->
+        <aside class="plan-panel">
+            <div class="plan-header">
+                <h2>📍 Your Plan</h2>
+                <span class="plan-count" id="planCount">0 places</span>
+            </div>
+
+            <!-- Plan Items -->
+            <div class="plan-items" id="planItems">
+                <div class="plan-empty" id="planEmpty">
+                    <span>🗺️</span>
+                    <p>Chưa có địa điểm nào</p>
+                    <small>Chat để tìm và thêm địa điểm!</small>
+                </div>
+            </div>
+
+            <!-- Plan Summary -->
+            <div class="plan-summary" id="planSummary" style="display: none;">
+                <div class="summary-row">
+                    <span>Tổng quãng đường:</span>
+                    <strong id="totalDistance">0 km</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Thời gian ước tính:</span>
+                    <strong id="totalDuration">0 phút</strong>
+                </div>
+            </div>
+
+            <!-- Plan Actions -->
+            <div class="plan-actions">
+                <button class="optimize-btn" id="optimizeBtn" disabled>
+                    🔀 Tối ưu lộ trình
+                </button>
+                <button class="clear-plan-btn" id="clearPlanBtn">
+                    🗑️ Xóa plan
+                </button>
+            </div>
+
+            <!-- Optimization Result -->
+            <div class="optimize-result" id="optimizeResult" style="display: none;">
+                <span class="saved-badge">✨ Tiết kiệm <strong id="savedDistance">0</strong> km!</span>
+            </div>
+        </aside>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

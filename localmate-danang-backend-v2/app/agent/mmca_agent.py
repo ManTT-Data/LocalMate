@@ -1,22 +1,25 @@
 """Multi-Modal Contextual Agent (MMCA) - ReAct Agent with MCP Tools.
 
-Implements the Agent-Centric Orchestration pattern from phase1.md:
+Implements the Agent-Centric Orchestration pattern:
 1. Parse user intent
 2. Select appropriate MCP tool(s)
-3. Execute tool(s)
-4. Synthesize final response
+3. Execute tool(s) with logging
+4. Synthesize final response with workflow trace
 
 Supports multiple LLM providers: Google (Gemini) and MegaLLM (DeepSeek).
 """
 
 import json
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.mcp.tools import mcp_tools
 from app.shared.integrations.gemini_client import GeminiClient
 from app.shared.integrations.megallm_client import MegaLLMClient
+from app.shared.logger import agent_logger, AgentWorkflow, WorkflowStep
 
 
 # Default coordinates for Da Nang (if no location specified)
@@ -53,23 +56,31 @@ SYSTEM_PROMPT = """Bạn là trợ lý du lịch thông minh cho Đà Nẵng. B�
 @dataclass
 class ChatMessage:
     """Chat message model."""
-
     role: str  # "user" or "assistant"
     content: str
 
 
 @dataclass
 class ToolCall:
-    """Tool call result."""
-
+    """Tool call with arguments and results."""
     tool_name: str
     arguments: dict
     result: list | None = None
+    duration_ms: float = 0
+
+
+@dataclass
+class ChatResult:
+    """Complete chat result with response and workflow."""
+    response: str
+    workflow: AgentWorkflow
+    tools_used: list[str] = field(default_factory=list)
+    total_duration_ms: float = 0
 
 
 class MMCAAgent:
     """
-    Multi-Modal Contextual Agent.
+    Multi-Modal Contextual Agent with Logging and Workflow Tracing.
 
     Implements ReAct (Reasoning + Acting) pattern:
     1. Observe: Parse user message and intent
@@ -100,6 +111,8 @@ class MMCAAgent:
             self.llm_client = GeminiClient(model=model)
         else:
             self.llm_client = MegaLLMClient(model=model)
+        
+        agent_logger.workflow_step("Agent initialized", f"Provider: {provider}, Model: {model}")
 
     async def chat(
         self,
@@ -107,9 +120,9 @@ class MMCAAgent:
         db: AsyncSession,
         image_url: str | None = None,
         history: str | None = None,
-    ) -> str:
+    ) -> ChatResult:
         """
-        Process a chat message and return response.
+        Process a chat message and return response with workflow trace.
 
         Args:
             message: User's natural language message
@@ -118,27 +131,129 @@ class MMCAAgent:
             history: Optional conversation history string
 
         Returns:
-            Agent's response as string
+            ChatResult with response, workflow, and metadata
         """
+        start_time = time.time()
+        
+        # Initialize workflow tracking
+        workflow = AgentWorkflow(query=message)
+        
+        # Log incoming request
+        agent_logger.api_request(
+            endpoint="/chat",
+            method="POST",
+            body={"message": message[:100], "has_image": bool(image_url), "has_history": bool(history)}
+        )
+        
         # Add user message to internal history
         self.conversation_history.append(ChatMessage(role="user", content=message))
 
         # Step 1: Analyze intent and decide tool usage
+        workflow.add_step(WorkflowStep(
+            step_name="Intent Analysis",
+            purpose="Phân tích câu hỏi để chọn tool phù hợp"
+        ))
+        
+        agent_logger.workflow_step("Step 1: Intent Analysis", message[:80])
+        intent = self._detect_intent(message, image_url)
+        workflow.intent_detected = intent
+        agent_logger.workflow_step("Intent detected", intent)
+        
         tool_calls = await self._plan_tool_calls(message, image_url)
+        
+        workflow.add_step(WorkflowStep(
+            step_name="Tool Planning",
+            purpose=f"Chọn {len(tool_calls)} tool(s) để thực thi",
+            output_summary=", ".join([tc.tool_name for tc in tool_calls])
+        ))
 
         # Step 2: Execute tools
+        agent_logger.workflow_step("Step 2: Execute Tools", f"{len(tool_calls)} tool(s)")
         tool_results = []
+        
         for tool_call in tool_calls:
+            tool_start = time.time()
+            
+            agent_logger.tool_call(tool_call.tool_name, tool_call.arguments)
+            
             result = await self._execute_tool(tool_call, db)
+            result.duration_ms = (time.time() - tool_start) * 1000
+            
+            result_count = len(result.result) if result.result else 0
+            agent_logger.tool_result(
+                tool_call.tool_name,
+                result_count,
+                result.result[0] if result.result else None
+            )
+            
+            # Add to workflow
+            workflow.add_step(WorkflowStep(
+                step_name=f"Execute {tool_call.tool_name}",
+                tool_name=tool_call.tool_name,
+                purpose=self._get_tool_purpose(tool_call.tool_name),
+                input_summary=json.dumps(tool_call.arguments, ensure_ascii=False)[:100],
+                result_count=result_count,
+                duration_ms=result.duration_ms
+            ))
+            
             tool_results.append(result)
 
         # Step 3: Synthesize response with history context
+        agent_logger.workflow_step("Step 3: Synthesize Response")
+        
+        llm_start = time.time()
         response = await self._synthesize_response(message, tool_results, image_url, history)
+        llm_duration = (time.time() - llm_start) * 1000
+        
+        agent_logger.llm_response(self.provider, response[:100], tokens=None)
+        
+        workflow.add_step(WorkflowStep(
+            step_name="LLM Synthesis",
+            purpose="Tổng hợp kết quả và tạo phản hồi",
+            duration_ms=llm_duration
+        ))
 
         # Add assistant response to internal history
         self.conversation_history.append(ChatMessage(role="assistant", content=response))
+        
+        # Calculate total duration
+        total_duration = (time.time() - start_time) * 1000
+        workflow.total_duration_ms = total_duration
+        
+        # Log complete
+        agent_logger.api_response("/chat", 200, {"response_len": len(response)}, total_duration)
+        
+        return ChatResult(
+            response=response,
+            workflow=workflow,
+            tools_used=workflow.tools_used,
+            total_duration_ms=total_duration
+        )
 
-        return response
+    def _detect_intent(self, message: str, image_url: str | None) -> str:
+        """Detect user intent for logging."""
+        intents = []
+        
+        if image_url:
+            intents.append("visual_search")
+        
+        location_keywords = ["gần", "cách", "nearby", "gần đây", "quanh", "xung quanh"]
+        if any(kw in message.lower() for kw in location_keywords):
+            intents.append("location_search")
+        
+        if not intents:
+            intents.append("text_search")
+        
+        return " + ".join(intents)
+
+    def _get_tool_purpose(self, tool_name: str) -> str:
+        """Get human-readable purpose for tool."""
+        purposes = {
+            "retrieve_context_text": "Tìm kiếm semantic trong văn bản (review, mô tả)",
+            "retrieve_similar_visuals": "Tìm địa điểm có hình ảnh tương tự",
+            "find_nearby_places": "Tìm địa điểm gần vị trí được nhắc đến",
+        }
+        return purposes.get(tool_name, tool_name)
 
     async def _plan_tool_calls(
         self,
@@ -182,7 +297,6 @@ class MMCAAgent:
             ))
 
         # For general queries without location keywords, use text search
-        # But skip if we already have graph results
         if not tool_calls:
             tool_calls.append(ToolCall(
                 tool_name="retrieve_context_text",
@@ -257,6 +371,7 @@ class MMCAAgent:
                 ]
 
         except Exception as e:
+            agent_logger.error(f"Tool execution failed: {tool_call.tool_name}", e)
             tool_call.result = [{"error": str(e)}]
 
         return tool_call
@@ -298,6 +413,8 @@ Câu hỏi hiện tại: {message}
 Hãy trả lời bằng tiếng Việt, thân thiện. Nếu có nhiều kết quả, hãy giới thiệu top 2-3 địa điểm phù hợp nhất.
 Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó khi trả lời."""
 
+        agent_logger.llm_call(self.provider, self.model or "default", prompt[:100])
+
         response = await self.llm_client.generate(
             prompt=prompt,
             temperature=0.7,
@@ -307,11 +424,7 @@ Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó
         return response
 
     def _extract_location(self, message: str) -> str | None:
-        """Extract location name from message using pattern matching.
-        
-        Uses a dictionary of known locations in Da Nang for fast matching.
-        """
-        # Known locations in Da Nang (lowercase for matching)
+        """Extract location name from message using pattern matching."""
         known_locations = {
             "mỹ khê": "My Khe Beach",
             "my khe": "My Khe Beach",
@@ -329,14 +442,6 @@ Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó
             "ngũ hành sơn": "Marble Mountains",
             "ngu hanh son": "Marble Mountains",
             "marble mountains": "Marble Mountains",
-            "khách sạn rex": "Rex Hotel",
-            "rex hotel": "Rex Hotel",
-            "rex": "Rex Hotel",
-            "intercontinental": "InterContinental Danang",
-            "novotel": "Novotel Danang",
-            "hilton": "Hilton Danang",
-            "hyatt": "Hyatt Regency Danang",
-            "pullman": "Pullman Danang",
         }
         
         message_lower = message.lower()

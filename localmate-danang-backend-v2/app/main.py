@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router as api_router
+from app.planner.router import router as planner_router
 from app.shared.db.session import engine
 from app.shared.integrations.neo4j_client import neo4j_client
 
@@ -37,22 +38,24 @@ app = FastAPI(
     description="""
 ## Multi-Modal Contextual Agent (MMCA) API
 
-Intelligent travel assistant for Da Nang with 3 MCP tools:
+Intelligent travel assistant for Da Nang with 3 MCP tools + Trip Planner:
 
 ### Tools Available:
 1. **retrieve_context_text** - Semantic search in text descriptions (reviews, menus)
 2. **retrieve_similar_visuals** - Image similarity search (find similar vibes)
 3. **find_nearby_places** - Spatial search (find places near a location)
 
-### How to Use:
-Use the `/chat` endpoint to interact with the agent in natural language.
+### Trip Planner:
+- Create plans and add places
+- Optimize route with TSP algorithm
+- Reorder, replace, and manage places
 
 ### Examples:
 - "Tìm quán cafe gần bãi biển Mỹ Khê"
 - "Nhà hàng hải sản nào được review tốt?"
 - "Quán nào có không gian xanh mát?" (with image_url)
 """,
-    version="0.2.0",
+    version="0.2.1",
     lifespan=lifespan,
 )
 
@@ -65,8 +68,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API router
+# Include API routers
 app.include_router(api_router, prefix="/api/v1", tags=["Chat"])
+app.include_router(planner_router, prefix="/api/v1", tags=["Trip Planner"])
 
 
 @app.get("/health", tags=["System"])

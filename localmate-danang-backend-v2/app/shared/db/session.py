@@ -9,7 +9,7 @@ from app.core.config import settings
 # Create async engine
 engine = create_async_engine(
     settings.database_url,
-    echo=settings.app_debug,
+    echo=False,  # Disable SQL logging (embedding vectors are too verbose)
     pool_pre_ping=True,
 )
 
