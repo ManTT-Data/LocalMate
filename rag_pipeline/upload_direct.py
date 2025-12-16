@@ -55,33 +55,32 @@ def setup_schema(conn):
         except Exception as e:
             print(f"  ⚠️ postgis extension: {e}")
         
-        # Create text embeddings table
+        # Create text embeddings table (matches existing schema)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS place_text_embeddings (
                 id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 place_id text NOT NULL,
-                embedding_type text NOT NULL DEFAULT 'master',
-                embedding vector(768) NOT NULL,
+                embedding vector(768),
+                content_type text,
                 source_text text,
                 metadata jsonb DEFAULT '{}',
                 created_at timestamptz DEFAULT now()
             );
         """)
-        print("  ✓ place_text_embeddings table created")
+        print("  ✓ place_text_embeddings table ready")
         
-        # Create image embeddings table
+        # Create image embeddings table (matches existing schema)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS place_image_embeddings (
                 id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 place_id text NOT NULL,
-                image_url text NOT NULL,
-                embedding vector(768) NOT NULL,
-                scene_type text DEFAULT 'other',
+                embedding vector(768),
+                image_url text,
                 metadata jsonb DEFAULT '{}',
                 created_at timestamptz DEFAULT now()
             );
         """)
-        print("  ✓ place_image_embeddings table created")
+        print("  ✓ place_image_embeddings table ready")
         
         # Create metadata table
         cur.execute("""
@@ -105,9 +104,8 @@ def setup_schema(conn):
         
         # Create indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_text_place_id ON place_text_embeddings(place_id);")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_text_emb_type ON place_text_embeddings(embedding_type);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_text_content_type ON place_text_embeddings(content_type);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_image_place_id ON place_image_embeddings(place_id);")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_image_scene ON place_image_embeddings(scene_type);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_meta_category ON places_metadata(category);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_meta_rating ON places_metadata(rating);")
         print("  ✓ Indexes created")
@@ -135,8 +133,8 @@ def upload_text_embeddings(conn, batch_size=50):
         for emb in embeddings:
             rows.append((
                 emb.place_id,
-                emb.embedding_type,
                 emb.embedding.tolist(),  # Convert numpy to list
+                emb.embedding_type,  # Maps to content_type
                 emb.source_text[:2000] if emb.source_text else None,
                 json.dumps(emb.metadata)
             ))
@@ -145,7 +143,7 @@ def upload_text_embeddings(conn, batch_size=50):
         for i in tqdm(range(0, len(rows), batch_size), desc="Uploading text"):
             batch = rows[i:i + batch_size]
             execute_values(cur, """
-                INSERT INTO place_text_embeddings (place_id, embedding_type, embedding, source_text, metadata)
+                INSERT INTO place_text_embeddings (place_id, embedding, content_type, source_text, metadata)
                 VALUES %s
             """, batch)
         
@@ -171,19 +169,21 @@ def upload_image_embeddings(conn, batch_size=50):
         # Prepare data
         rows = []
         for emb in embeddings:
+            # Include scene_type in metadata
+            meta = emb.metadata.copy() if emb.metadata else {}
+            meta['scene_type'] = emb.scene_type
             rows.append((
                 emb.place_id,
-                emb.image_url,
                 emb.embedding.tolist(),
-                emb.scene_type,
-                json.dumps(emb.metadata)
+                emb.image_url,
+                json.dumps(meta)
             ))
         
         # Batch insert
         for i in tqdm(range(0, len(rows), batch_size), desc="Uploading images"):
             batch = rows[i:i + batch_size]
             execute_values(cur, """
-                INSERT INTO place_image_embeddings (place_id, image_url, embedding, scene_type, metadata)
+                INSERT INTO place_image_embeddings (place_id, embedding, image_url, metadata)
                 VALUES %s
             """, batch)
         

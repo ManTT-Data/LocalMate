@@ -133,7 +133,7 @@ class ImageSearchService:
             sql = """
                 SELECT 
                     e.place_id,
-                    e.scene_type,
+                    COALESCE(e.metadata->>'scene_type', 'unknown') as scene_type,
                     e.image_url,
                     1 - (e.embedding <=> %s::vector) as similarity,
                     m.name,
@@ -150,7 +150,7 @@ class ImageSearchService:
             params = [image_embedding.tolist(), image_embedding.tolist(), min_similarity]
             
             if scene_filter and scene_filter.lower() != "all":
-                sql += " AND e.scene_type = %s"
+                sql += " AND e.metadata->>'scene_type' = %s"
                 params.append(scene_filter)
             
             sql += " ORDER BY e.embedding <=> %s::vector LIMIT 100"
