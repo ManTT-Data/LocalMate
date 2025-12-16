@@ -9,6 +9,7 @@ import {
   Divider,
   ActionIcon,
   Collapse,
+  Button,
 } from "@mantine/core";
 import {
   IconClock,
@@ -17,11 +18,18 @@ import {
   IconChevronUp,
   IconChevronDown,
   IconX,
+  IconPlus,
+  IconCheck,
 } from "@tabler/icons-react";
 import { destinations } from "../../data/mockData";
+import { usePlan } from "../../contexts/PlanContext";
 
 const DestinationCard = ({ destination = destinations[0], onClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { plan, addItem } = usePlan();
+
+  // Check if this destination is already in the plan
+  const isInPlan = plan.items.some((item) => item.placeId === destination.id);
 
   return (
     <Paper
@@ -181,6 +189,22 @@ const DestinationCard = ({ destination = destinations[0], onClose }) => {
               View details
             </Anchor>
           </Group>
+
+          {/* Add to Plan Button */}
+          <Button
+            fullWidth
+            mt="sm"
+            size="sm"
+            variant={isInPlan ? "light" : "filled"}
+            color={isInPlan ? "green" : "blue"}
+            leftSection={
+              isInPlan ? <IconCheck size={16} /> : <IconPlus size={16} />
+            }
+            onClick={() => !isInPlan && addItem(destination)}
+            disabled={isInPlan}
+          >
+            {isInPlan ? "Added to Plan" : "Add to Plan"}
+          </Button>
         </Collapse>
       </Box>
     </Paper>
