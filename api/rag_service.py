@@ -119,7 +119,7 @@ class RAGSearchService:
         category_filter = self.CATEGORY_TO_DB.get(category_intent, []) if category_intent else []
         
         # 3. Search all relevant embedding types
-        embedding_types = ['llm_enhanced', 'master', 'category_food', 'ambiance', 'reviews_positive']
+        content_types = ['llm_enhanced', 'master', 'category_food', 'ambiance', 'reviews_positive']
         
         all_matches = []
         
@@ -129,7 +129,7 @@ class RAGSearchService:
                 WITH ranked_results AS (
                     SELECT 
                         e.place_id,
-                        e.embedding_type,
+                        e.content_type,
                         e.source_text,
                         1 - (e.embedding <=> %s::vector) as similarity,
                         m.name,
@@ -137,12 +137,12 @@ class RAGSearchService:
                         m.rating,
                         m.raw_data,
                         ROW_NUMBER() OVER (
-                            PARTITION BY e.place_id, e.embedding_type 
+                            PARTITION BY e.place_id, e.content_type 
                             ORDER BY e.embedding <=> %s::vector
                         ) as rn
                     FROM place_text_embeddings e
                     JOIN places_metadata m ON e.place_id = m.place_id
-                    WHERE e.embedding_type = ANY(%s)
+                    WHERE e.content_type = ANY(%s)
                       AND m.name IS NOT NULL 
                       AND m.name != 'Unknown'
                       AND m.name != 'Results'
@@ -157,7 +157,7 @@ class RAGSearchService:
             cur.execute(sql, [
                 query_embedding.tolist(),
                 query_embedding.tolist(),
-                embedding_types
+                content_types
             ])
             
             results = cur.fetchall()
@@ -175,7 +175,7 @@ class RAGSearchService:
         for r in results:
             pid = r['place_id']
             similarity = float(r['similarity'])
-            emb_type = r['embedding_type']
+            emb_type = r['content_type']
             
             # Store best similarity per type
             type_weight = {
@@ -272,7 +272,7 @@ class RAGSearchService:
                     FROM place_text_embeddings e
                     JOIN places_metadata m ON e.place_id = m.place_id
                     WHERE m.category = ANY(%s)
-                      AND e.embedding_type = 'llm_enhanced'
+                      AND e.content_type = 'llm_enhanced'
                       AND m.name IS NOT NULL AND m.name != 'Results'
                     ORDER BY e.place_id, e.embedding <=> %s::vector
                     LIMIT %s
