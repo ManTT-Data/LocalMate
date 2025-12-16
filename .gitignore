@@ -2,6 +2,7 @@
 data/places/
 data/photos/
 data/crawled/
+data/rag_processed/
 data/*.html
 data/*.json
 data/*.csv
