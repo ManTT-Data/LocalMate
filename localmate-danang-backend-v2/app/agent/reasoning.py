@@ -28,6 +28,10 @@ REACT_SYSTEM_PROMPT = """Bạn là agent du lịch thông minh cho Đà Nẵng v
    - Input: {"image_url": "..."}
    - Output: [{name, similarity, image_url}]
 
+5. `search_social_media` - Tìm kiếm mạng xã hội và tin tức
+   - Input: {"query": "review quán ăn", "freshness": "pw", "platforms": ["tiktok"]}
+   - Output: [{title, url, age, platform}]
+
 **Quy trình:**
 Với mỗi bước, bạn phải:
 1. **Thought**: Suy nghĩ về bước tiếp theo cần làm
@@ -46,9 +50,11 @@ Với mỗi bước, bạn phải:
 **Quan trọng:**
 - Nếu cần biết vị trí → dùng get_location_coordinates trước
 - Nếu tìm theo khoảng cách → dùng find_nearby_places
+- Nếu tìm review/trend MXH → dùng search_social_media
 - Nếu cần lọc theo đặc điểm (view, không gian, giá) → dùng retrieve_context_text
 - Khi đủ thông tin → action = "finish"
 """
+
 
 
 @dataclass
@@ -157,6 +163,8 @@ def get_tool_purpose(action: str) -> str:
         "find_nearby_places": "Tìm địa điểm gần vị trí",
         "retrieve_context_text": "Tìm theo văn bản (reviews, mô tả)",
         "retrieve_similar_visuals": "Tìm theo hình ảnh tương tự",
+        "search_social_media": "Tìm kiếm mạng xã hội và tin tức",
         "finish": "Hoàn thành và tổng hợp kết quả",
     }
+
     return purposes.get(action, action)

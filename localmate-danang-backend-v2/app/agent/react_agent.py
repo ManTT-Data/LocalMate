@@ -260,15 +260,26 @@ class ReActAgent:
                 image_url=url,
                 limit=action_input.get("limit", 5),
             )
+                for r in results
+            ]
+        
+        elif action == "search_social_media":
+            results = await self.tools.search_social_media(
+                query=action_input.get("query", ""),
+                limit=action_input.get("limit", 5),
+                freshness=action_input.get("freshness", "pw"),
+                platforms=action_input.get("platforms"),
+            )
             return [
                 {
-                    "place_id": r.place_id,
-                    "name": r.name,
-                    "category": r.category,
-                    "similarity": r.similarity,
+                    "title": r.title,
+                    "url": r.url,
+                    "age": r.age,
+                    "platform": r.platform,
                 }
                 for r in results
             ]
+
         
         else:
             return {"error": f"Unknown tool: {action}"}

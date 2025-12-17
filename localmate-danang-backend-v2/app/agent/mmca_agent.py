@@ -43,14 +43,20 @@ SYSTEM_PROMPT = """Bạn là trợ lý du lịch thông minh cho Đà Nẵng. B�
    - Ví dụ: "Quán cafe gần Cầu Rồng", "Nhà hàng gần bãi biển Mỹ Khê"
    - Đặc biệt: Có thể lấy chi tiết đầy đủ với photos, reviews
 
+**4. search_social_media** - Tìm kiếm mạng xã hội và tin tức
+   - Khi nào: Hỏi về "review", "tin hot", "trend", "tiktok", "facebook", "tin mới"
+   - Ví dụ: "Review quán ăn ngon Đà Nẵng trên TikTok", "Tin hot tuần qua"
+   - Tham số: query, freshness ("pw": tuần, "pm": tháng), platforms (["tiktok", "facebook", "reddit"])
+
 **Quy tắc quan trọng:**
 1. Phân tích intent để chọn ĐÚNG tool (không chỉ dùng 1 tool)
 2. Với câu hỏi tổng quát ("quán cafe ngon") → dùng retrieve_context_text
 3. Với câu hỏi vị trí ("gần X", "quanh Y") → dùng find_nearby_places
-4. Với ảnh → dùng retrieve_similar_visuals
-5. Có thể kết hợp nhiều tools để có kết quả tốt nhất
+4. Với câu hỏi trend/review từ MXH -> dùng search_social_media
+5. Với ảnh → dùng retrieve_similar_visuals
 6. Trả lời tiếng Việt, thân thiện, cung cấp thông tin cụ thể (tên, rating, khoảng cách)
 """
+
 
 
 @dataclass
@@ -244,6 +250,11 @@ class MMCAAgent:
         if not intents:
             intents.append("text_search")
         
+        # Social intent detection
+        social_keywords = ["review", "tin hot", "trend", "tin mới", "tiktok", "facebook", "reddit", "youtube", "mạng xã hội"]
+        if any(kw in message.lower() for kw in social_keywords):
+            intents.append("social_search")
+            
         return " + ".join(intents)
 
     def _get_tool_purpose(self, tool_name: str) -> str:
@@ -252,6 +263,7 @@ class MMCAAgent:
             "retrieve_context_text": "Tìm kiếm semantic trong văn bản (review, mô tả)",
             "retrieve_similar_visuals": "Tìm địa điểm có hình ảnh tương tự",
             "find_nearby_places": "Tìm địa điểm gần vị trí được nhắc đến",
+            "search_social_media": "Tìm kiếm thông tin từ mạng xã hội (news, trends)",
         }
         return purposes.get(tool_name, tool_name)
 
@@ -272,6 +284,30 @@ class MMCAAgent:
             tool_calls.append(ToolCall(
                 tool_name="retrieve_similar_visuals",
                 arguments={"image_url": image_url, "limit": 5},
+            ))
+
+        # Check for social media intent FIRST
+        social_keywords = ["review", "tin hot", "trend", "tin mới", "tiktok", "facebook", "reddit", "youtube", "mạng xã hội"]
+        if any(kw in message.lower() for kw in social_keywords):
+            # Determine freshness
+            freshness = "pw" # Default past week
+            if "tháng" in message.lower() or "month" in message.lower():
+                freshness = "pm"
+            
+            # Determine platforms
+            platforms = []
+            for p in ["tiktok", "facebook", "reddit", "youtube", "twitter", "instagram"]:
+                if p in message.lower():
+                    platforms.append(p)
+            
+            tool_calls.append(ToolCall(
+                tool_name="search_social_media",
+                arguments={
+                    "query": message,
+                    "limit": 5,
+                    "freshness": freshness,
+                    "platforms": platforms if platforms else None
+                }
             ))
 
         # Analyze message for location/proximity queries
@@ -296,12 +332,15 @@ class MMCAAgent:
                 },
             ))
 
-        # For general queries without location keywords, use text search
+        # For general queries without location keywords AND NO SOCIAL INTENT, use text search
+        # If social search is already triggered, we might skip text search to avoid noise, 
+        # or keep it if query is mixed. For now, let's keep text search only if no other tools used.
         if not tool_calls:
             tool_calls.append(ToolCall(
                 tool_name="retrieve_context_text",
                 arguments={"query": message, "limit": 5},
             ))
+
 
         return tool_calls
 
@@ -369,6 +408,25 @@ class MMCAAgent:
                     }
                     for r in results
                 ]
+
+            elif tool_call.tool_name == "search_social_media":
+                results = await self.tools.search_social_media(
+                    query=tool_call.arguments.get("query", ""),
+                    limit=tool_call.arguments.get("limit", 10),
+                    freshness=tool_call.arguments.get("freshness", "pw"),
+                    platforms=tool_call.arguments.get("platforms"),
+                )
+                tool_call.result = [
+                    {
+                        "title": r.title,
+                        "url": r.url,
+                        "description": r.description,
+                        "age": r.age,
+                        "platform": r.platform,
+                    }
+                    for r in results
+                ]
+
 
         except Exception as e:
             agent_logger.error(f"Tool execution failed: {tool_call.tool_name}", e)
