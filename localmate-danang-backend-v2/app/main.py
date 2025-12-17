@@ -11,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router as api_router
 from app.planner.router import router as planner_router
+from app.users.router import router as users_router
+from app.itineraries.router import router as itineraries_router
 from app.shared.db.session import engine
 from app.shared.integrations.neo4j_client import neo4j_client
 
@@ -55,7 +57,7 @@ Intelligent travel assistant for Da Nang with 3 MCP tools + Trip Planner:
 - "Nhà hàng hải sản nào được review tốt?"
 - "Quán nào có không gian xanh mát?" (with image_url)
 """,
-    version="0.2.1",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -71,6 +73,12 @@ app.add_middleware(
 # Include API routers
 app.include_router(api_router, prefix="/api/v1", tags=["Chat"])
 app.include_router(planner_router, prefix="/api/v1", tags=["Trip Planner"])
+app.include_router(users_router, prefix="/api/v1", tags=["Users"])
+app.include_router(itineraries_router, prefix="/api/v1", tags=["Itineraries"])
+
+# Upload router
+from app.upload import router as upload_router
+app.include_router(upload_router, prefix="/api/v1", tags=["Upload"])
 
 
 @app.get("/health", tags=["System"])

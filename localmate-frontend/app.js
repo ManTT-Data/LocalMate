@@ -4,7 +4,7 @@
  */
 
 // API Configuration
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = 'https://cuong2004-localmate.hf.space/api/v1';
 const CONFIG = {
     provider: 'MegaLLM',
     model: 'deepseek-ai/deepseek-v3.1-terminus',

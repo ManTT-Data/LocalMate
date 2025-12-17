@@ -1,16 +1,19 @@
 # LocalMate API Documentation
 
 > **Base URL:** `https://cuong2004-localmate.hf.space/api/v1`  
-> **Swagger UI:** `/docs` | **ReDoc:** `/redoc`
+> **Swagger UI:** `/docs` | **ReDoc:** `/redoc`  
+> **Version:** 0.3.0
 
 ---
 
 ## 📋 Table of Contents
 
 1. [Chat API](#chat-api)
-2. [Trip Planner API](#trip-planner-api)
-3. [Utility Endpoints](#utility-endpoints)
-4. [Request/Response Models](#models)
+2. [User Profile API](#user-profile-api)
+3. [Itineraries API](#itineraries-api)
+4. [Trip Planner API](#trip-planner-api)
+5. [Utility Endpoints](#utility-endpoints)
+6. [Models](#models)
 
 ---
 
@@ -97,11 +100,9 @@ Clear conversation history.
 
 ---
 
-### GET `/chat/history`
+### GET `/chat/history/{user_id}`
 
-Get chat history info.
-
-**Query Params:** `?user_id=user_123`
+Get chat session metadata (list of sessions, counts).
 
 **Response:**
 ```json
@@ -110,6 +111,35 @@ Get chat history info.
   "sessions": ["default", "trip_planning"],
   "current_session": "default",
   "message_count": 12
+}
+```
+
+---
+
+### GET `/chat/messages/{user_id}`
+
+Get actual chat messages from a session.
+
+**Query Params:** `?session_id=default`
+
+**Response:**
+```json
+{
+  "user_id": "user_123",
+  "session_id": "default",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tìm quán cafe gần Mỹ Khê",
+      "timestamp": "2025-01-01T10:00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Dựa trên yêu cầu của bạn...",
+      "timestamp": "2025-01-01T10:00:05"
+    }
+  ],
+  "count": 2
 }
 ```
 
@@ -139,6 +169,222 @@ Search places by uploaded image.
   "total": 5
 }
 ```
+
+---
+
+## Upload API
+
+Base path: `/upload`
+
+### POST `/upload/image`
+
+Upload image to Supabase Storage and get public URL.
+
+> Use this to get an image URL for the `/chat` endpoint's `image_url` parameter.
+
+**Request:** `multipart/form-data`
+- `file`: Image file (required)
+- `user_id`: string (optional, for organizing uploads)
+
+**Supported formats:** JPEG, PNG, WebP, GIF  
+**Max size:** 10MB
+
+**Response:**
+```json
+{
+  "url": "https://xxx.supabase.co/storage/v1/object/public/image/user123/20250101_120000_abc123.jpg",
+  "path": "user123/20250101_120000_abc123.jpg",
+  "size": 245678,
+  "content_type": "image/jpeg"
+}
+```
+
+**Usage Flow:**
+```
+1. POST /upload/image → get URL
+2. POST /chat { image_url: URL } → visual search
+```
+
+---
+
+## User Profile API
+
+Base path: `/users`
+
+### GET `/users/me`
+
+Get current user's profile.
+
+**Query:** `?user_id=uuid-here`
+
+**Response:**
+```json
+{
+  "profile": {
+    "id": "uuid-here",
+    "full_name": "Nguyen Van A",
+    "phone": "0901234567",
+    "role": "tourist",
+    "locale": "vi_VN",
+    "avatar_url": "https://...",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
+  },
+  "message": "Profile retrieved"
+}
+```
+
+---
+
+### PUT `/users/me`
+
+Update current user's profile.
+
+**Query:** `?user_id=uuid-here`
+
+**Request:**
+```json
+{
+  "full_name": "Nguyen Van B",
+  "phone": "0909876543",
+  "locale": "en_US",
+  "avatar_url": "https://..."
+}
+```
+
+---
+
+### GET `/users/{user_id}`
+
+Get user profile by ID (admin only).
+
+---
+
+## Itineraries API
+
+Base path: `/itineraries`
+
+> Multi-day trip planning with persistent storage (Supabase)
+
+### POST `/itineraries`
+
+Create new itinerary.
+
+**Query:** `?user_id=uuid-here`
+
+**Request:**
+```json
+{
+  "title": "Da Nang 3 Days Trip",
+  "start_date": "2025-02-01",
+  "end_date": "2025-02-03",
+  "total_days": 3,
+  "total_budget": 5000000,
+  "currency": "VND"
+}
+```
+
+**Response:**
+```json
+{
+  "itinerary": {
+    "id": "itinerary-uuid",
+    "user_id": "user-uuid",
+    "title": "Da Nang 3 Days Trip",
+    "start_date": "2025-02-01",
+    "end_date": "2025-02-03",
+    "total_days": 3,
+    "total_budget": 5000000,
+    "currency": "VND",
+    "stops": [],
+    "created_at": "...",
+    "updated_at": "..."
+  },
+  "message": "Itinerary created"
+}
+```
+
+---
+
+### GET `/itineraries`
+
+List user's itineraries.
+
+**Query:** `?user_id=uuid-here`
+
+**Response:**
+```json
+[
+  {
+    "id": "itinerary-uuid",
+    "title": "Da Nang 3 Days Trip",
+    "start_date": "2025-02-01",
+    "end_date": "2025-02-03",
+    "total_days": 3,
+    "stop_count": 8,
+    "created_at": "..."
+  }
+]
+```
+
+---
+
+### GET `/itineraries/{itinerary_id}`
+
+Get itinerary with all stops.
+
+**Query:** `?user_id=uuid-here`
+
+---
+
+### PUT `/itineraries/{itinerary_id}`
+
+Update itinerary details.
+
+**Request:**
+```json
+{
+  "title": "Updated Title",
+  "total_budget": 6000000
+}
+```
+
+---
+
+### DELETE `/itineraries/{itinerary_id}`
+
+Delete itinerary and all stops.
+
+---
+
+### POST `/itineraries/{itinerary_id}/stops`
+
+Add stop to itinerary.
+
+**Request:**
+```json
+{
+  "place_id": "cafe_123",
+  "day_index": 1,
+  "order_index": 1,
+  "arrival_time": "2025-02-01T09:00:00Z",
+  "stay_minutes": 60,
+  "notes": "Morning coffee",
+  "tags": ["cafe", "breakfast"]
+}
+```
+
+---
+
+### PUT `/itineraries/{itinerary_id}/stops/{stop_id}`
+
+Update stop.
+
+---
+
+### DELETE `/itineraries/{itinerary_id}/stops/{stop_id}`
+
+Remove stop.
 
 ---
 

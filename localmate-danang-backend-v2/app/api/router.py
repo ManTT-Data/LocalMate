@@ -158,6 +158,21 @@ class HistoryResponse(BaseModel):
     message_count: int
 
 
+class MessageItem(BaseModel):
+    """Single chat message."""
+    role: str
+    content: str
+    timestamp: str
+
+
+class MessagesResponse(BaseModel):
+    """Chat messages response."""
+    user_id: str
+    session_id: str
+    messages: list[MessageItem]
+    count: int
+
+
 @router.post(
     "/nearby",
     response_model=NearbyResponse,
@@ -391,6 +406,34 @@ async def get_history_info(user_id: str) -> HistoryResponse:
         sessions=sessions,
         current_session="default" if "default" in sessions else (sessions[0] if sessions else None),
         message_count=len(messages),
+    )
+
+
+@router.get(
+    "/chat/messages/{user_id}",
+    response_model=MessagesResponse,
+    summary="Get chat messages",
+    description="Get actual chat messages from a specific session.",
+)
+async def get_chat_messages(
+    user_id: str,
+    session_id: str = "default",
+) -> MessagesResponse:
+    """Get chat messages for a session."""
+    messages = chat_history.get_messages(user_id, session_id)
+    
+    return MessagesResponse(
+        user_id=user_id,
+        session_id=session_id,
+        messages=[
+            MessageItem(
+                role=m.role,
+                content=m.content,
+                timestamp=m.timestamp.isoformat(),
+            )
+            for m in messages
+        ],
+        count=len(messages),
     )
 
 
