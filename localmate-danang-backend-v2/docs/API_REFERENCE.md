@@ -51,30 +51,38 @@ Main endpoint for interacting with the AI assistant.
 **Response:**
 ```json
 {
-  "response": "Dựa trên yêu cầu của bạn, tôi tìm thấy...",
+  "response": "Mình gợi ý 3 quán cafe rất đẹp gần Mỹ Khê...",
   "status": "success",
   "provider": "MegaLLM",
   "model": "deepseek-ai/deepseek-v3.1-terminus",
   "user_id": "user_123",
   "session_id": "default",
-  "workflow": {
-    "query": "Quán cafe view đẹp gần Mỹ Khê",
-    "intent_detected": "location_search",
-    "tools_used": ["find_nearby_places"],
-    "steps": [
-      {
-        "step": "Execute find_nearby_places",
-        "tool": "find_nearby_places",
-        "purpose": "Tìm địa điểm gần vị trí được nhắc đến",
-        "results": 5
-      }
-    ],
-    "total_duration_ms": 5748.23
-  },
+  "places": [
+    {
+      "place_id": "cafe_001",
+      "name": "Cabanon Palace",
+      "category": "restaurant",
+      "lat": 16.06,
+      "lng": 108.24,
+      "rating": 4.8,
+      "address": "123 Võ Nguyên Giáp"
+    },
+    {
+      "place_id": "cafe_002",
+      "name": "Be Man Restaurant",
+      "category": "restaurant",
+      "lat": 16.07,
+      "lng": 108.25,
+      "rating": 4.5,
+      "address": "456 Phạm Văn Đồng"
+    }
+  ],
   "tools_used": ["find_nearby_places"],
   "duration_ms": 5748.23
 }
 ```
+
+> **Note:** `places` array contains LLM-selected places with full details. FE can render these as cards separately from text response.
 
 ---
 

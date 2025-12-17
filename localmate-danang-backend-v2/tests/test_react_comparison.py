@@ -20,7 +20,7 @@ import httpx
 # =============================================================================
 
 # API Settings
-API_BASE = "http://localhost:8000/api/v1"
+API_BASE = "https://cuong2004-localmate.hf.space/api/v1"
 USER_ID = "test_comparison"
 
 # Delay Settings (in seconds)
@@ -33,18 +33,18 @@ REQUEST_TIMEOUT = 120       # Timeout for each API request
 
 # Test Cases - 10 queries covering different scenarios
 TEST_CASES = [
-    {
-        "id": 1,
-        "query": "Quán cafe view đẹp",
-        "description": "Simple text search - no location",
-        "expected_tools": ["retrieve_context_text"],
-    },
     # {
-    #     "id": 2,
-    #     "query": "Nhà hàng gần bãi biển Mỹ Khê",
-    #     "description": "Location-based search",
-    #     "expected_tools": ["find_nearby_places"],
+    #     "id": 1,
+    #     "query": "Quán cafe view đẹp",
+    #     "description": "Simple text search - no location",
+    #     "expected_tools": ["retrieve_context_text"],
     # },
+    {
+        "id": 2,
+        "query": "Nhà hàng gần bãi biển Mỹ Khê",
+        "description": "Location-based search",
+        "expected_tools": ["find_nearby_places"],
+    },
     # {
     #     "id": 3,
     #     "query": "Quán cafe có không gian xanh mát gần Cầu Rồng",

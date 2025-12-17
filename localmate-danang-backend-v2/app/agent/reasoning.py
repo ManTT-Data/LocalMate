@@ -125,13 +125,57 @@ def build_reasoning_prompt(
 ) -> str:
     """Build the prompt for the next reasoning step."""
     
-    # Previous steps summary
+    # Previous steps summary with FULL observations
     steps_text = ""
     if previous_steps:
-        steps_text = "\n**Các bước đã thực hiện:**\n"
+        steps_text = "\n**Các bước đã thực hiện và KẾT QUẢ:**\n"
         for step in previous_steps:
-            steps_text += f"- Step {step['step']}: {step['thought'][:80]}...\n"
-            steps_text += f"  Action: {step['action']} → {len(step.get('observation', [])) if isinstance(step.get('observation'), list) else 'done'} kết quả\n"
+            action = step.get('action', 'unknown')
+            thought = step.get('thought', '')[:100]
+            observation = step.get('observation', [])
+            
+            steps_text += f"\n📍 **Step {step['step']}**: {thought}...\n"
+            steps_text += f"   Action: `{action}`\n"
+            
+            # Show detailed observation data
+            if action == "get_location_coordinates" and observation:
+                if isinstance(observation, dict):
+                    lat = observation.get('lat', 'N/A')
+                    lng = observation.get('lng', 'N/A')
+                    steps_text += f"   ✅ Kết quả: lat={lat}, lng={lng}\n"
+                    steps_text += f"   ⚠️ ĐÃ CÓ TỌA ĐỘ - KHÔNG CẦN GỌI LẠI get_location_coordinates\n"
+            
+            elif action == "find_nearby_places" and observation:
+                if isinstance(observation, list) and len(observation) > 0:
+                    steps_text += f"   ✅ Tìm được {len(observation)} địa điểm:\n"
+                    for i, place in enumerate(observation[:5], 1):
+                        if isinstance(place, dict):
+                            name = place.get('name', 'Unknown')
+                            dist = place.get('distance_km', 'N/A')
+                            rating = place.get('rating', 'N/A')
+                            steps_text += f"      {i}. {name} ({dist}km, ⭐{rating})\n"
+                        else:
+                            steps_text += f"      {i}. {place}\n"
+                    if len(observation) > 5:
+                        steps_text += f"      ... và {len(observation) - 5} địa điểm khác\n"
+                    steps_text += f"   ⚠️ ĐÃ CÓ DANH SÁCH - KHÔNG CẦN GỌI LẠI find_nearby_places\n"
+            
+            elif action == "retrieve_context_text" and observation:
+                if isinstance(observation, list) and len(observation) > 0:
+                    steps_text += f"   ✅ Tìm được {len(observation)} kết quả text:\n"
+                    for i, item in enumerate(observation[:3], 1):
+                        if isinstance(item, dict):
+                            name = item.get('name', 'Unknown')
+                            steps_text += f"      {i}. {name}\n"
+                        else:
+                            steps_text += f"      {i}. {item}\n"
+                    steps_text += f"   ⚠️ ĐÃ CÓ KẾT QUẢ TEXT - KHÔNG CẦN GỌI LẠI retrieve_context_text\n"
+            
+            elif observation:
+                result_count = len(observation) if isinstance(observation, list) else 1
+                steps_text += f"   ✅ Kết quả: {result_count} items\n"
+        
+        steps_text += "\n**⚠️ QUAN TRỌNG:** Nếu đã có đủ thông tin từ các bước trên → action = 'finish'\n"
     
     # Image context
     image_text = ""

@@ -9,6 +9,7 @@ Implements the ReAct (Reasoning + Acting) pattern:
 
 import time
 import json
+import re
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -157,15 +158,17 @@ class ReActAgent:
         
         if state.error:
             final_response = f"Xin lỗi, đã xảy ra lỗi: {state.error}"
+            selected_place_ids = []
         else:
-            final_response = await self._synthesize(state, history)
+            final_response, selected_place_ids = await self._synthesize(state, history)
         
         state.final_answer = final_response
+        state.selected_place_ids = selected_place_ids  # Store for later enrichment
         
         agent_logger.api_response(
             "/chat (ReAct)",
             200,
-            {"steps": len(state.steps), "tools": list(state.context.keys())},
+            {"steps": len(state.steps), "tools": list(state.context.keys()), "places": len(selected_place_ids)},
             state.total_duration_ms,
         )
         
@@ -260,6 +263,13 @@ class ReActAgent:
                 image_url=url,
                 limit=action_input.get("limit", 5),
             )
+            return [
+                {
+                    "place_id": r.place_id,
+                    "name": r.name,
+                    "category": r.category,
+                    "similarity": r.similarity,
+                }
                 for r in results
             ]
         
@@ -284,15 +294,27 @@ class ReActAgent:
         else:
             return {"error": f"Unknown tool: {action}"}
     
-    async def _synthesize(self, state: AgentState, history: str | None = None) -> str:
-        """Synthesize final response from all collected information."""
+    async def _synthesize(self, state: AgentState, history: str | None = None) -> tuple[str, list[str]]:
+        """
+        Synthesize final response from all collected information.
+        
+        Returns:
+            Tuple of (response_text, selected_place_ids)
+        """
         # Build context from all steps
         context_parts = []
+        all_place_ids = []  # Collect all available place_ids
+        
         for step in state.steps:
             if step.observation and step.action != "finish":
                 context_parts.append(
                     f"Kết quả từ {step.action}:\n{json.dumps(step.observation, ensure_ascii=False, indent=2)}"
                 )
+                # Collect place_ids from observations
+                if isinstance(step.observation, list):
+                    for item in step.observation:
+                        if isinstance(item, dict) and 'place_id' in item:
+                            all_place_ids.append(item['place_id'])
         
         context = "\n\n".join(context_parts) if context_parts else "Không có kết quả."
         
@@ -317,15 +339,47 @@ Và kết quả thu thập được:
 Hãy trả lời câu hỏi của user một cách tự nhiên và hữu ích:
 "{state.query}"
 
-Trả lời tiếng Việt, thân thiện. Giới thiệu top 2-3 địa điểm phù hợp nhất với thông tin cụ thể."""
+**QUAN TRỌNG:** Trả lời theo format JSON:
+```json
+{{
+  "response": "Câu trả lời tiếng Việt, thân thiện. Giới thiệu top 2-3 địa điểm phù hợp nhất.",
+  "selected_place_ids": ["place_id_1", "place_id_2", "place_id_3"]
+}}
+```
+
+Chỉ chọn những place_id xuất hiện trong kết quả tìm kiếm ở trên. Nếu không có địa điểm, để mảng rỗng."""
 
         response = await self.llm_client.generate(
             prompt=prompt,
             temperature=0.7,
-            system_instruction="Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Trả lời ngắn gọn, hữu ích.",
+            system_instruction="Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Trả lời format JSON.",
         )
         
-        return response
+        # Parse JSON response
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if json_match:
+                response = json_match.group(1)
+            
+            json_start = response.find('{')
+            json_end = response.rfind('}')
+            if json_start != -1 and json_end != -1:
+                response = response[json_start:json_end + 1]
+            
+            data = json.loads(response)
+            text_response = data.get("response", response)
+            selected_ids = data.get("selected_place_ids", [])
+            
+            # Validate selected_ids are in available places
+            valid_ids = [pid for pid in selected_ids if pid in all_place_ids]
+            
+            return text_response, valid_ids
+            
+        except (json.JSONDecodeError, KeyError):
+            # Fallback: return raw response with no places
+            agent_logger.error("Failed to parse synthesis JSON", None)
+            return response, []
     
     def to_workflow(self, state: AgentState) -> AgentWorkflow:
         """Convert AgentState to AgentWorkflow for response."""
