@@ -31,10 +31,15 @@ from app.mcp.tools.graph_tool import (
     get_place_details,
     get_nearby_by_relationship,
     get_same_category_places,
-    geocode_location,
     get_location_coordinates,
     TOOL_DEFINITION as GRAPH_TOOL_DEFINITION,
 )
+from app.mcp.tools.social_tool import (
+    SocialSearchResult,
+    search_social_media,
+    # TODO: Define TOOL_DEFINITION in social_tool if needed for agent JSON schema
+)
+
 
 
 # Combined tool definitions for agent
@@ -91,6 +96,13 @@ class MCPTools:
     async def get_location_coordinates(self, location_name):
         """Get coordinates for a location (Neo4j + OSM fallback)."""
         return await get_location_coordinates(location_name)
+    
+    # Social Tool
+    async def search_social_media(self, query: str, limit: int = 10, freshness: str = "pw", platforms: list[str] = None) -> list[SocialSearchResult]:
+        """Search for social media content (news, trends)."""
+        return await search_social_media(query, limit, freshness, platforms)
+
+
 
 
 # Global MCP tools instance

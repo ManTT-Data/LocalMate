@@ -1,5 +1,6 @@
 """Itineraries Router - Multi-day trip planning with persistent storage."""
 
+from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -12,6 +13,18 @@ from app.itineraries import (
 
 
 router = APIRouter(prefix="/itineraries", tags=["Itineraries"])
+
+
+def validate_uuid(value: str, field_name: str = "ID") -> str:
+    """Validate that a string is a valid UUID format."""
+    try:
+        UUID(value)
+        return value
+    except ValueError:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid {field_name}: '{value}' is not a valid UUID format. Expected format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        )
 
 
 # ==================== ITINERARY CRUD ====================
@@ -28,6 +41,9 @@ async def create_itinerary(
     db: AsyncSession = Depends(get_db),
 ) -> ItineraryResponse:
     """Create a new itinerary."""
+    # Validate user_id is a valid UUID
+    validate_uuid(user_id, "user_id")
+    
     result = await db.execute(
         text("""
             INSERT INTO itineraries (user_id, title, start_date, end_date, total_days, total_budget, currency)
@@ -76,6 +92,9 @@ async def list_itineraries(
     db: AsyncSession = Depends(get_db),
 ) -> list[ItineraryListItem]:
     """List all itineraries for a user."""
+    # Validate user_id is a valid UUID
+    validate_uuid(user_id, "user_id")
+    
     result = await db.execute(
         text("""
             SELECT i.id, i.title, i.start_date, i.end_date, i.total_days, i.created_at,
@@ -116,6 +135,10 @@ async def get_itinerary(
     db: AsyncSession = Depends(get_db),
 ) -> ItineraryResponse:
     """Get itinerary by ID with all stops."""
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    
     # Get itinerary
     result = await db.execute(
         text("""
@@ -191,6 +214,10 @@ async def update_itinerary(
     db: AsyncSession = Depends(get_db),
 ) -> ItineraryResponse:
     """Update itinerary."""
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    
     update_fields = []
     params = {"id": itinerary_id, "user_id": user_id}
     
@@ -246,6 +273,10 @@ async def delete_itinerary(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Delete itinerary."""
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    
     # Delete stops first (cascade)
     await db.execute(
         text("DELETE FROM itinerary_stops WHERE itinerary_id = :id"),
@@ -280,6 +311,10 @@ async def add_stop(
     db: AsyncSession = Depends(get_db),
 ) -> StopResponse:
     """Add a stop to the itinerary."""
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    
     # Verify itinerary exists and belongs to user
     check = await db.execute(
         text("SELECT id FROM itineraries WHERE id = :id AND user_id = :user_id"),
@@ -360,6 +395,11 @@ async def update_stop(
     db: AsyncSession = Depends(get_db),
 ) -> StopResponse:
     """Update a stop."""
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    validate_uuid(stop_id, "stop_id")
+    
     # Verify ownership
     check = await db.execute(
         text("""
@@ -440,6 +480,11 @@ async def delete_stop(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Delete a stop."""
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    validate_uuid(stop_id, "stop_id")
+    
     # Verify ownership and delete
     result = await db.execute(
         text("""

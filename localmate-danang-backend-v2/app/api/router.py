@@ -86,8 +86,21 @@ class WorkflowResponse(BaseModel):
     total_duration_ms: float = Field(..., description="Total processing time")
 
 
+class PlaceItem(BaseModel):
+    """Place item for FE rendering."""
+    place_id: str
+    name: str
+    category: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    rating: float | None = None
+    distance_km: float | None = None
+    address: str | None = None
+    image_url: str | None = None
+
+
 class ChatResponse(BaseModel):
-    """Chat response model with workflow trace."""
+    """Chat response model."""
 
     response: str = Field(..., description="Agent's response")
     status: str = Field(default="success", description="Response status")
@@ -95,7 +108,7 @@ class ChatResponse(BaseModel):
     model: str = Field(..., description="Model used")
     user_id: str = Field(..., description="User ID")
     session_id: str = Field(..., description="Session ID used")
-    workflow: WorkflowResponse | None = Field(None, description="Workflow trace for debugging")
+    places: list[PlaceItem] = Field(default_factory=list, description="LLM-selected places for FE rendering")
     tools_used: list[str] = Field(default_factory=list, description="MCP tools used")
     duration_ms: float = Field(default=0, description="Total processing time in ms")
 
@@ -225,6 +238,53 @@ async def find_nearby(request: NearbyRequest) -> NearbyResponse:
     )
 
 
+async def enrich_places_from_ids(place_ids: list[str], db: AsyncSession) -> list[PlaceItem]:
+    """
+    Enrich LLM-selected place_ids with full details from DB.
+    
+    Args:
+        place_ids: List of place_ids selected by LLM in synthesis
+        db: Database session
+        
+    Returns:
+        List of PlaceItem with full details
+    """
+    if not place_ids:
+        return []
+    
+    # Fetch full details from DB
+    from sqlalchemy import text
+    result = await db.execute(
+        text("""
+            SELECT place_id, name, category, address, rating,
+                   ST_X(coordinates::geometry) as lng, 
+                   ST_Y(coordinates::geometry) as lat
+            FROM places_metadata
+            WHERE place_id = ANY(:place_ids)
+        """),
+        {"place_ids": place_ids}
+    )
+    rows = result.fetchall()
+    
+    # Build PlaceItem list preserving LLM order
+    places_dict = {row.place_id: row for row in rows}
+    places = []
+    for pid in place_ids:
+        if pid in places_dict:
+            row = places_dict[pid]
+            places.append(PlaceItem(
+                place_id=row.place_id,
+                name=row.name,
+                category=row.category,
+                lat=row.lat,
+                lng=row.lng,
+                rating=float(row.rating) if row.rating else None,
+                address=row.address,
+            ))
+    
+    return places
+
+
 @router.post(
     "/chat",
     response_model=ChatResponse,
@@ -310,13 +370,8 @@ async def chat(
             session_id=session_id,
         )
         
-        workflow_response = WorkflowResponse(
-            query=workflow_data["query"],
-            intent_detected=workflow_data["intent_detected"],
-            tools_used=workflow_data["tools_used"],
-            steps=[WorkflowStepResponse(**s) for s in workflow_data["steps"]],
-            total_duration_ms=workflow_data["total_duration_ms"],
-        )
+        # Enrich LLM-selected place_ids with DB data
+        places = await enrich_places_from_ids(agent_state.selected_place_ids, db)
         
         return ChatResponse(
             response=response_text,
@@ -325,8 +380,8 @@ async def chat(
             model=model,
             user_id=request.user_id,
             session_id=session_id,
-            workflow=workflow_response,
-            tools_used=workflow.tools_used,
+            places=places,
+            tools_used=list(agent_state.context.keys()),
             duration_ms=agent_state.total_duration_ms,
         )
     
@@ -350,15 +405,30 @@ async def chat(
             session_id=session_id,
         )
 
-        # Build workflow response
-        workflow_data = result.workflow.to_dict()
-        workflow_response = WorkflowResponse(
-            query=workflow_data["query"],
-            intent_detected=workflow_data["intent_detected"],
-            tools_used=workflow_data["tools_used"],
-            steps=[WorkflowStepResponse(**s) for s in workflow_data["steps"]],
-            total_duration_ms=workflow_data["total_duration_ms"],
-        )
+        # Extract places from tool results if available
+        places = []
+        if result.tool_results:
+            # Extract place_ids from ToolCall objects
+            place_ids = []
+            distance_map = {}  # Store distance info for nearby places
+            for tool_call in result.tool_results:
+                # ToolCall has .result attribute which is a list of dicts
+                if tool_call.result:
+                    for item in tool_call.result:
+                        if isinstance(item, dict) and 'place_id' in item:
+                            pid = item['place_id']
+                            if pid not in place_ids:  # Avoid duplicates
+                                place_ids.append(pid)
+                            # Capture distance if available (from find_nearby_places)
+                            if 'distance_km' in item:
+                                distance_map[pid] = item['distance_km']
+            
+            if place_ids:
+                places = await enrich_places_from_ids(place_ids[:5], db)  # Limit to top 5
+                # Add distance info to places
+                for place in places:
+                    if place.place_id in distance_map:
+                        place.distance_km = distance_map[place.place_id]
 
         return ChatResponse(
             response=result.response,
@@ -367,7 +437,7 @@ async def chat(
             model=model,
             user_id=request.user_id,
             session_id=session_id,
-            workflow=workflow_response,
+            places=places,
             tools_used=result.tools_used,
             duration_ms=result.total_duration_ms,
         )

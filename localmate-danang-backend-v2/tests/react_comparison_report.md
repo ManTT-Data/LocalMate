@@ -1,6 +1,6 @@
 # LocalMate Agent Test Report
 
-**Generated:** 2025-12-17 05:11:43
+**Generated:** 2025-12-18 02:27:42
 
 ## Summary
 
@@ -8,63 +8,53 @@
 |--------|-------------|------------|
 | Total Tests | 1 | 1 |
 | Success | 1 | 1 |
-| Avg Duration | 10653ms | 13297ms |
+| Avg Duration | 12627ms | 15080ms |
 
 ---
 
 ## Detailed Results
 
-### Test Case 1: Simple text search - no location
+### Test Case 2: Location-based search
 
-**Query:** `Quán cafe view đẹp`
+**Query:** `Nhà hàng gần bãi biển Mỹ Khê`
 
 #### Single Mode
 
 - **Status:** ✅ Success
-- **Duration:** 10653ms
-- **Tools Used:** retrieve_context_text
+- **Duration:** 12627ms
+- **Tools Used:** find_nearby_places
 
 **Workflow:**
-  - Intent Analysis
-    Tool: `None` | Results: 0
-  - Tool Planning
-    Tool: `None` | Results: 0
-  - Execute retrieve_context_text
-    Tool: `retrieve_context_text` | Results: 5
-  - LLM Synthesis
-    Tool: `None` | Results: 0
+No steps recorded
 
 **Response Preview:**
-> Chào bạn! Dựa trên yêu cầu "quán cafe view đẹp" của bạn, mình gợi ý một số địa điểm nổi bật ở Đà Nẵng sau đây nhé:
+> Chào bạn! Mình tìm được một số nhà hàng ngon gần bãi biển Mỹ Khê cho bạn đây:
 
-☕ **Top 3 quán cafe view đẹp đáng thử:**
+🏆 **Top 3 nhà hàng được đánh giá cao nhất:**
 
-1. **Nhớ Một Người**  
-   - Địa chỉ: 06 Tr...
+1. **Cabanon Palace** - Nhà hàng Pháp
+   * ⭐️ Rating: 4.8/5
+   * 📍 Cách biể...
 
 #### ReAct Mode
 
 - **Status:** ✅ Success
-- **Duration:** 13297ms
-- **Tools Used:** retrieve_context_text
-- **Steps:** 3
-- **Intent Detected:** react_multi_step
+- **Duration:** 15080ms
+- **Tools Used:** get_location_coordinates, find_nearby_places
+- **Steps:** 0
+- **Intent Detected:** N/A
 
 **Workflow Steps:**
-  - Step 1: User đang tìm quán cafe có view đẹp ở Đà Nẵng. Đây...
-    Tool: `retrieve_context_text` | Results: 10
-  - Step 2: User đang tìm quán cafe có view đẹp ở Đà Nẵng. Tôi...
-    Tool: `retrieve_context_text` | Results: 10
-  - Step 3: Tôi đã có tổng cộng 10 kết quả từ hai lần gọi retr...
-    Tool: `None` | Results: 0
+No steps recorded
 
 **Response Preview:**
-> Chào bạn! Dưới đây là một số quán cafe có view đẹp tại Đà Nẵng mà bạn có thể tham khảo:
+> Chào bạn! Mình tìm được những nhà hàng ngon và gần bãi biển Mỹ Khê nhất cho bạn đây:
 
-☕ **Nhớ Một Người**  
-- Địa chỉ: 06 Trường Thi 5, Hòa Thuận Tây, Hải Châu  
-- Rating: 4.9/5 ⭐  
-- Đặc điểm: Khô...
+🏆 **Top 3 nhà hàng được đánh giá cao nhất:**
+
+1. **Cabanon Palace** - Nhà hàng Pháp
+   * ⭐️ Rating: 4.8/5
+   * 📍 C...
 
 ---
 
@@ -74,7 +64,7 @@
 
 | Test | Single Mode Tools | ReAct Mode Tools | ReAct Steps |
 |------|-------------------|------------------|-------------|
-| 1 | retrieve_context_text | retrieve_context_text | 3 |
+| 2 | find_nearby_places | get_location_coordinates, find_nearby_places | 0 |
 
 
 ### Key Observations

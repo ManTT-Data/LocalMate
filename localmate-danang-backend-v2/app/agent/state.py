@@ -46,6 +46,7 @@ class AgentState:
     max_steps: int = 5
     is_complete: bool = False
     final_answer: str = ""
+    selected_place_ids: list[str] = field(default_factory=list)  # LLM-selected places
     total_duration_ms: float = 0
     error: str | None = None
     
