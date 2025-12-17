@@ -17,7 +17,7 @@ class StopBase(BaseModel):
 
 class StopCreate(StopBase):
     """Create stop request."""
-    pass
+    snapshot: dict | None = Field(None, description="Place snapshot (name, category, etc.) - optional, will be fetched from DB if not provided")
 
 
 class StopUpdate(BaseModel):

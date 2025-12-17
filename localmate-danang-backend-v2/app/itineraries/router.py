@@ -288,20 +288,23 @@ async def add_stop(
     if not check.fetchone():
         raise HTTPException(status_code=404, detail="Itinerary not found")
     
-    # Get place snapshot
-    place_result = await db.execute(
-        text("SELECT name, category, address, rating FROM places_metadata WHERE place_id = :place_id"),
-        {"place_id": request.place_id}
-    )
-    place_row = place_result.fetchone()
-    snapshot = None
-    if place_row:
-        snapshot = {
-            "name": place_row.name,
-            "category": place_row.category,
-            "address": place_row.address,
-            "rating": float(place_row.rating) if place_row.rating else None,
-        }
+    # Get place snapshot - prefer from request, otherwise from DB
+    snapshot = request.snapshot
+    if not snapshot:
+        # Try to fetch from database
+        place_result = await db.execute(
+            text("SELECT name, category, address, rating FROM places_metadata WHERE place_id = :place_id"),
+            {"place_id": request.place_id}
+        )
+        place_row = place_result.fetchone()
+        if place_row:
+            snapshot = {
+                "name": place_row.name,
+                "category": place_row.category,
+                "address": place_row.address,
+                "rating": float(place_row.rating) if place_row.rating else None,
+            }
+    
     
     # Insert stop
     result = await db.execute(
