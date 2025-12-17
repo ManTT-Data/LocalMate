@@ -19,7 +19,7 @@ const navigationLinks = [
   { id: 4, label: "Saved Places", href: "/saved", active: false },
 ];
 
-const Header = ({ onToggleDarkMode, isDarkMode }) => {
+const Header = () => {
   const location = useLocation();
 
   return (

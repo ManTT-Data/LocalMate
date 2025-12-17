@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Box, Stack, ActionIcon } from "@mantine/core";
+import React, { useState, useEffect } from "react";
+import { Box, Stack, ActionIcon, Loader, Center } from "@mantine/core";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -8,7 +8,7 @@ import ContextualToolbar from "../ContextualToolbar/ContextualToolbar";
 import TripBadge from "../TripBadge/TripBadge";
 import DestinationCard from "../DestinationCard/DestinationCard";
 import GrabBookingWidget from "../BookingWidget/GrabBookingWidget";
-import { userProfile, destinations } from "../../data/mockData";
+import { findNearbyPlaces } from "../../apis/aiService";
 import useGeolocation from "../../hooks/useGeolocation";
 
 // Fix for default marker icons in Leaflet with Webpack
@@ -61,6 +61,72 @@ const MapPanel = () => {
   const center = [16.060793, 108.216996]; // Da Nang center
   const { location: userLocation, error: locationError } = useGeolocation();
   const [mapInstance, setMapInstance] = useState(null);
+  const [destinations, setDestinations] = useState([]);
+  const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
+  const [destinationsError, setDestinationsError] = useState(null);
+
+  // Fallback user location for marker (mock data)
+  const fallbackUserLocation = {
+    lat: 16.012855984,
+    lng: 108.263785,
+  };
+
+  // Fetch nearby destinations on mount
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        setIsLoadingDestinations(true);
+        setDestinationsError(null);
+
+        // Use user location if available, otherwise use Da Nang center
+        const searchLat = userLocation.loaded
+          ? userLocation.coordinates.lat
+          : center[0];
+        const searchLng = userLocation.loaded
+          ? userLocation.coordinates.lng
+          : center[1];
+
+        // Fetch nearby places within 10km radius
+        const response = await findNearbyPlaces(searchLat, searchLng, {
+          maxDistanceKm: 10.0,
+          limit: 50,
+        });
+
+        if (response?.places) {
+          // Transform backend places to match expected destination format
+          const transformedDestinations = response.places.map((place) => ({
+            id: place.place_id,
+            name: place.name,
+            description: place.description || `A ${place.category} in Da Nang`,
+            location: {
+              lat: place.lat,
+              lng: place.lng,
+            },
+            type: place.category || "Place",
+            category: place.category,
+            rating: place.rating,
+            distance_km: place.distance_km,
+          }));
+
+          setDestinations(transformedDestinations);
+        } else {
+          setDestinations([]);
+        }
+      } catch (error) {
+        console.error("Error fetching destinations:", error);
+        setDestinationsError(error.message);
+        setDestinations([]); // Fallback to empty array
+      } finally {
+        setIsLoadingDestinations(false);
+      }
+    };
+
+    fetchDestinations();
+  }, [
+    userLocation.loaded,
+    userLocation.coordinates.lat,
+    userLocation.coordinates.lng,
+  ]);
 
   const handleMarkerClick = (destination) => {
     setSelectedDestination(destination);
@@ -148,33 +214,47 @@ const MapPanel = () => {
           ) : (
             // Fallback to static user location if no geolocation
             <Marker
-              position={[userProfile.location.lat, userProfile.location.lng]}
+              position={[fallbackUserLocation.lat, fallbackUserLocation.lng]}
               icon={userIcon}
             >
-              <Popup>Your profile location (Mock)</Popup>
+              <Popup>Your location (Default)</Popup>
             </Marker>
           )}
 
           {/* Destination Markers */}
-          {destinations.map((destination) => (
-            <Marker
-              key={destination.id}
-              position={[destination.location.lat, destination.location.lng]}
-              icon={createDestinationIcon(destination)}
-              eventHandlers={{
-                click: () => handleMarkerClick(destination),
-              }}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold">{destination.name}</h3>
-                  <p className="text-sm text-slate-600">
-                    {destination.description}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {isLoadingDestinations
+            ? // Show loading indicator (optional - can be removed if loading state shown elsewhere)
+              null
+            : destinationsError
+            ? // No markers if error
+              null
+            : destinations.map((destination) => (
+                <Marker
+                  key={destination.id}
+                  position={[
+                    destination.location.lat,
+                    destination.location.lng,
+                  ]}
+                  icon={createDestinationIcon(destination)}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(destination),
+                  }}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <h3 className="font-bold">{destination.name}</h3>
+                      <p className="text-sm text-slate-600">
+                        {destination.description}
+                      </p>
+                      {destination.distance_km && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          {destination.distance_km.toFixed(2)} km away
+                        </p>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
         </MapContainer>
 
         {/* Locate Me Button */}

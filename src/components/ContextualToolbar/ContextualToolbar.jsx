@@ -5,7 +5,7 @@ import { IconMap, IconCalendar, IconReceipt } from "@tabler/icons-react";
 
 // Contextual tabs data (moved from mockData.js)
 const contextualTabs = [
-  { id: 1, label: "Map View", icon: IconMap, href: "/" },
+  { id: 1, label: "Map View", icon: IconMap, href: "/map" },
   { id: 2, label: "Itinerary", icon: IconCalendar, href: "/ai-itinerary" },
   { id: 3, label: "Bookings", icon: IconReceipt, href: "/booking" },
 ];
