@@ -13,6 +13,7 @@ from app.api.router import router as api_router
 from app.planner.router import router as planner_router
 from app.users.router import router as users_router
 from app.itineraries.router import router as itineraries_router
+from app.auth.router import router as auth_router
 from app.shared.db.session import engine
 from app.shared.integrations.neo4j_client import neo4j_client
 
@@ -75,6 +76,7 @@ app.include_router(api_router, prefix="/api/v1", tags=["Chat"])
 app.include_router(planner_router, prefix="/api/v1", tags=["Trip Planner"])
 app.include_router(users_router, prefix="/api/v1", tags=["Users"])
 app.include_router(itineraries_router, prefix="/api/v1", tags=["Itineraries"])
+app.include_router(auth_router, prefix="/api/v1", tags=["Authentication"])
 
 # Upload router
 from app.upload import router as upload_router
