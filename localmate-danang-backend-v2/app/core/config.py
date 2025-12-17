@@ -23,6 +23,10 @@ class Settings(BaseSettings):
 
     # Google AI
     google_api_key: str
+    
+    # Google OAuth
+    google_client_id: str
+    jwt_secret: str
 
     # MegaLLM (OpenAI-compatible)
     megallm_api_key: str | None = None

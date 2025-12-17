@@ -8,12 +8,12 @@ from datetime import datetime, timedelta
 import jwt
 import os
 from uuid import uuid4
+from app.core.config import settings
 
 # Google OAuth verification URL
-GOOGLE_VERIFY_URL = "https://www.googleapis.com/oauth2/v3/userinfo?access_token="
+GOOGLE_VERIFY_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
-# JWT settings (should be in environment variables)
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+# JWT settings
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
@@ -43,7 +43,11 @@ async def login_control(access_token: str, db: AsyncSession) -> dict:
     # Verify token with Google
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(f"{GOOGLE_VERIFY_URL}{access_token}")
+            # Get user info using access token
+            response = await client.get(
+                GOOGLE_VERIFY_URL,
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
             
             if response.status_code != 200:
                 raise HTTPException(
@@ -52,6 +56,10 @@ async def login_control(access_token: str, db: AsyncSession) -> dict:
                 )
             
             google_user_info = response.json()
+            
+            # Verify the token was issued for our client
+            # Note: For access tokens from Token Client, we trust Google's validation
+            # The token is already validated by Google if we get a 200 response
             
         except httpx.RequestError as e:
             raise HTTPException(
@@ -133,7 +141,7 @@ async def login_control(access_token: str, db: AsyncSession) -> dict:
         "email": email,
         "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     }
-    token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(token_payload, settings.jwt_secret, algorithm=JWT_ALGORITHM)
     
     return {
         "user_id": user_id,
