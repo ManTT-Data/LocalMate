@@ -407,19 +407,28 @@ async def chat(
 
         # Extract places from tool results if available
         places = []
-        if hasattr(result, 'selected_place_ids') and result.selected_place_ids:
-            # If agent provides selected_place_ids, enrich from DB
-            places = await enrich_places_from_ids(result.selected_place_ids, db)
-        elif hasattr(result, 'tool_results') and result.tool_results:
-            # Fallback: extract all place_ids from tool results
+        if result.tool_results:
+            # Extract place_ids from ToolCall objects
             place_ids = []
-            for tool_result in result.tool_results:
-                if isinstance(tool_result, list):
-                    for item in tool_result:
+            distance_map = {}  # Store distance info for nearby places
+            for tool_call in result.tool_results:
+                # ToolCall has .result attribute which is a list of dicts
+                if tool_call.result:
+                    for item in tool_call.result:
                         if isinstance(item, dict) and 'place_id' in item:
-                            place_ids.append(item['place_id'])
+                            pid = item['place_id']
+                            if pid not in place_ids:  # Avoid duplicates
+                                place_ids.append(pid)
+                            # Capture distance if available (from find_nearby_places)
+                            if 'distance_km' in item:
+                                distance_map[pid] = item['distance_km']
+            
             if place_ids:
                 places = await enrich_places_from_ids(place_ids[:5], db)  # Limit to top 5
+                # Add distance info to places
+                for place in places:
+                    if place.place_id in distance_map:
+                        place.distance_km = distance_map[place.place_id]
 
         return ChatResponse(
             response=result.response,

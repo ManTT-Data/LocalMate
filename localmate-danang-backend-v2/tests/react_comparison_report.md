@@ -1,6 +1,6 @@
 # LocalMate Agent Test Report
 
-**Generated:** 2025-12-18 01:17:38
+**Generated:** 2025-12-18 02:27:42
 
 ## Summary
 
@@ -8,7 +8,7 @@
 |--------|-------------|------------|
 | Total Tests | 1 | 1 |
 | Success | 1 | 1 |
-| Avg Duration | 7584ms | 23328ms |
+| Avg Duration | 12627ms | 15080ms |
 
 ---
 
@@ -21,49 +21,40 @@
 #### Single Mode
 
 - **Status:** ✅ Success
-- **Duration:** 7584ms
+- **Duration:** 12627ms
 - **Tools Used:** find_nearby_places
 
 **Workflow:**
-  - Intent Analysis
-    Tool: `None` | Results: 0
-  - Tool Planning
-    Tool: `None` | Results: 0
-  - Execute find_nearby_places
-    Tool: `find_nearby_places` | Results: 5
-  - LLM Synthesis
-    Tool: `None` | Results: 0
+No steps recorded
 
 **Response Preview:**
-> Chào bạn! Mình đã tìm được một số nhà hàng ngon và gần bãi biển Mỹ Khê cho bạn đây. Dựa trên khoảng cách và đánh giá, đây là những gợi ý nổi bật nhất:
+> Chào bạn! Mình tìm được một số nhà hàng ngon gần bãi biển Mỹ Khê cho bạn đây:
 
-🍽️ **Top 3 nhà hàng gần bãi biển Mỹ Khê:**
+🏆 **Top 3 nhà hàng được đánh giá cao nhất:**
 
-1. *...
+1. **Cabanon Palace** - Nhà hàng Pháp
+   * ⭐️ Rating: 4.8/5
+   * 📍 Cách biể...
 
 #### ReAct Mode
 
 - **Status:** ✅ Success
-- **Duration:** 23328ms
+- **Duration:** 15080ms
 - **Tools Used:** get_location_coordinates, find_nearby_places
-- **Steps:** 3
-- **Intent Detected:** react_multi_step
+- **Steps:** 0
+- **Intent Detected:** N/A
 
 **Workflow Steps:**
-  - Step 1: Để tìm nhà hàng gần bãi biển Mỹ Khê, trước tiên cầ...
-    Tool: `get_location_coordinates` | Results: 0
-  - Step 2: Đã có tọa độ của bãi biển Mỹ Khê, bây giờ cần tìm ...
-    Tool: `find_nearby_places` | Results: 5
-  - Step 3: Tôi đã có tọa độ của bãi biển Mỹ Khê và danh sách ...
-    Tool: `None` | Results: 0
+No steps recorded
 
 **Response Preview:**
-> Dạ chào bạn! Mình gợi ý một số nhà hàng ngon và gần bãi biển Mỹ Khê nhé:
+> Chào bạn! Mình tìm được những nhà hàng ngon và gần bãi biển Mỹ Khê nhất cho bạn đây:
 
-🍽️ **Cabanon Palace**  
-- *Chuyên:* Ẩm thực Pháp sang trọng  
-- *Khoảng cách:* ~0.94km từ biển  
-- *Đánh giá:* 4.8/5 – lý tưởn...
+🏆 **Top 3 nhà hàng được đánh giá cao nhất:**
+
+1. **Cabanon Palace** - Nhà hàng Pháp
+   * ⭐️ Rating: 4.8/5
+   * 📍 C...
 
 ---
 
@@ -73,7 +64,7 @@
 
 | Test | Single Mode Tools | ReAct Mode Tools | ReAct Steps |
 |------|-------------------|------------------|-------------|
-| 2 | find_nearby_places | get_location_coordinates, find_nearby_places | 3 |
+| 2 | find_nearby_places | get_location_coordinates, find_nearby_places | 0 |
 
 
 ### Key Observations

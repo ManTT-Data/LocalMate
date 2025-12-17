@@ -82,6 +82,7 @@ class ChatResult:
     workflow: AgentWorkflow
     tools_used: list[str] = field(default_factory=list)
     total_duration_ms: float = 0
+    tool_results: list = field(default_factory=list)  # List of ToolCall with results
 
 
 class MMCAAgent:
@@ -233,7 +234,8 @@ class MMCAAgent:
             response=response,
             workflow=workflow,
             tools_used=workflow.tools_used,
-            total_duration_ms=total_duration
+            total_duration_ms=total_duration,
+            tool_results=tool_results,  # Include tool results for place extraction
         )
 
     def _detect_intent(self, message: str, image_url: str | None) -> str:
