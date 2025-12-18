@@ -26,12 +26,12 @@ import {
 } from "../../apis/aiService";
 import useItineraryStore from "../../stores/useItineraryStore";
 import useAiPlacesStore from "../../stores/useAiPlacesStore";
-import { HARDCODED_TEST_USER } from "../../utils/constants";
+import { getCurrentUserId, getCurrentSessionId } from "../../utils/authHelpers";
 
 const ChatPanel = ({
   onSendMessage,
-  userId = HARDCODED_TEST_USER.userId,
-  sessionId = HARDCODED_TEST_USER.sessionId,
+  userId = getCurrentUserId(),
+  sessionId = getCurrentSessionId(),
 }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

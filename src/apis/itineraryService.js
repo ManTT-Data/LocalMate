@@ -4,7 +4,8 @@
  */
 
 import apiHelper from "../utils/apiHelper";
-import { apiUrls, HARDCODED_TEST_USER } from "../utils/constants";
+import { apiUrls } from "../utils/constants";
+import { getCurrentUserId } from "../utils/authHelpers";
 import {
   transformBackendToFrontend,
   transformStopToBackend,
@@ -14,14 +15,13 @@ import {
 
 /**
  * Fetch all itineraries for a user
- * @param {string} userId - User ID
- * @returns {Promise<Array>} List of itineraries
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
+ * @returns {Promise<Array>} Array of itineraries
  */
-export const fetchUserItinerariesAPI = async (
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const fetchUserItinerariesAPI = async (userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.get(
-    `${apiUrls.itinerary.list}?user_id=${userId}`
+    `${apiUrls.itinerary.list}?user_id=${actualUserId}`
   );
   return response;
 };
@@ -29,15 +29,13 @@ export const fetchUserItinerariesAPI = async (
 /**
  * Fetch single itinerary by ID with all stops
  * @param {string} itineraryId - Itinerary ID
- * @param {string} userId - User ID
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Itinerary with stops in frontend format
  */
-export const fetchItineraryByIdAPI = async (
-  itineraryId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const fetchItineraryByIdAPI = async (itineraryId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.get(
-    `${apiUrls.itinerary.get(itineraryId)}?user_id=${userId}`
+    `${apiUrls.itinerary.get(itineraryId)}?user_id=${actualUserId}`
   );
 
   if (response?.itinerary) {
@@ -81,13 +79,11 @@ export const fetchItineraryFromBackend = async (userId = "anonymous") => {
 /**
  * Create a new itinerary
  * @param {Object} itineraryData - Itinerary data
- * @param {string} userId - User ID (defaults to test user)
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Created itinerary
  */
-export const createItineraryAPI = async (
-  itineraryData,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const createItineraryAPI = async (itineraryData, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const {
     title = "My Trip to Da Nang",
     startDate,
@@ -108,7 +104,7 @@ export const createItineraryAPI = async (
   });
 
   const response = await apiHelper.post(
-    `${apiUrls.itinerary.create}?user_id=${userId}`,
+    `${apiUrls.itinerary.create}?user_id=${actualUserId}`,
     request
   );
 
@@ -119,16 +115,13 @@ export const createItineraryAPI = async (
  * Update itinerary details
  * @param {string} itineraryId - Itinerary ID
  * @param {Object} updates - Fields to update
- * @param {string} userId - User ID
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Update result
  */
-export const updateItineraryAPI = async (
-  itineraryId,
-  updates,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const updateItineraryAPI = async (itineraryId, updates, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.put(
-    `${apiUrls.itinerary.update(itineraryId)}?user_id=${userId}`,
+    `${apiUrls.itinerary.update(itineraryId)}?user_id=${actualUserId}`,
     updates
   );
 
@@ -138,15 +131,13 @@ export const updateItineraryAPI = async (
 /**
  * Delete an itinerary
  * @param {string} itineraryId - Itinerary ID
- * @param {string} userId - User ID
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Delete result
  */
-export const deleteItineraryAPI = async (
-  itineraryId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const deleteItineraryAPI = async (itineraryId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.delete(
-    `${apiUrls.itinerary.delete(itineraryId)}?user_id=${userId}`
+    `${apiUrls.itinerary.delete(itineraryId)}?user_id=${actualUserId}`
   );
 
   return response;
@@ -156,14 +147,11 @@ export const deleteItineraryAPI = async (
  * Add a stop to the itinerary
  * @param {string} itineraryId - Itinerary ID
  * @param {Object} stopData - Stop data
- * @param {string} userId - User ID
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Created stop
  */
-export const addStopAPI = async (
-  itineraryId,
-  stopData,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const addStopAPI = async (itineraryId, stopData, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const { destination, dayIndex, orderIndex, time, stayMinutes, notes, tags } =
     stopData;
 
@@ -181,7 +169,7 @@ export const addStopAPI = async (
   );
 
   const response = await apiHelper.post(
-    `${apiUrls.itinerary.addStop(itineraryId)}?user_id=${userId}`,
+    `${apiUrls.itinerary.addStop(itineraryId)}?user_id=${actualUserId}`,
     backendStop
   );
 
@@ -193,17 +181,16 @@ export const addStopAPI = async (
  * @param {string} itineraryId - Itinerary ID
  * @param {string} stopId - Stop ID
  * @param {Object} updates - Fields to update
- * @param {string} userId - User ID
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Update result
  */
-export const updateStopAPI = async (
-  itineraryId,
-  stopId,
-  updates,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const updateStopAPI = async (itineraryId, stopId, updates, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.put(
-    `${apiUrls.itinerary.updateStop(itineraryId, stopId)}?user_id=${userId}`,
+    `${apiUrls.itinerary.updateStop(
+      itineraryId,
+      stopId
+    )}?user_id=${actualUserId}`,
     updates
   );
 
@@ -217,13 +204,13 @@ export const updateStopAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Delete result
  */
-export const deleteStopAPI = async (
-  itineraryId,
-  stopId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const deleteStopAPI = async (itineraryId, stopId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.delete(
-    `${apiUrls.itinerary.deleteStop(itineraryId, stopId)}?user_id=${userId}`
+    `${apiUrls.itinerary.deleteStop(
+      itineraryId,
+      stopId
+    )}?user_id=${actualUserId}`
   );
 
   return response;
@@ -233,18 +220,19 @@ export const deleteStopAPI = async (
  * Optimize itinerary route for a specific day
  * @param {string} itineraryId - Itinerary ID
  * @param {number} startDay - Day to optimize (1-indexed)
- * @param {string} userId - User ID
+ * @param {string} [userId] - User ID (defaults to current authenticated user)
  * @returns {Promise<Object>} Optimization result
  */
 export const optimizeItineraryAPI = async (
   itineraryId,
   startDay = 1,
-  userId = HARDCODED_TEST_USER.userId
+  userId
 ) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.post(
     `${apiUrls.itinerary.get(
       itineraryId
-    )}/optimize?user_id=${userId}&start_day=${startDay}`
+    )}/optimize?user_id=${actualUserId}&start_day=${startDay}`
   );
 
   return response;

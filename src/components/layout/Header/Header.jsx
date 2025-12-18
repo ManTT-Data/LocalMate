@@ -11,7 +11,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { IconBell, IconMapSearch } from "@tabler/icons-react";
 import useUserStore from "../../../stores/useUserStore";
-import { HARDCODED_TEST_USER } from "../../../utils/constants";
+import useAuthStore from "../../../stores/useAuthStore";
 
 const navigationLinks = [
   { id: 1, label: "Home", href: "/", active: false },
@@ -23,13 +23,15 @@ const navigationLinks = [
 const Header = () => {
   const location = useLocation();
   const user = useUserStore((state) => state.user);
+  const { getUserName, getUserAvatar, getUserEmail, isAuthenticated } =
+    useAuthStore();
 
-  // Use hardcoded test user if no real user is logged in
-  const currentUser = user || {
-    name: HARDCODED_TEST_USER.fullName,
-    avatar: HARDCODED_TEST_USER.avatarUrl,
-    email: HARDCODED_TEST_USER.email,
-    isTestUser: true,
+  // Use real user from auth store, fallback to test user
+  const currentUser = {
+    name: getUserName(),
+    avatar: getUserAvatar(),
+    email: getUserEmail(),
+    isTestUser: !isAuthenticated,
   };
 
   return (

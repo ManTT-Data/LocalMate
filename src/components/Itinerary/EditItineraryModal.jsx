@@ -5,7 +5,6 @@ import { DateInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import { updateItineraryAPI } from "../../apis/itineraryService";
 import useItineraryStore from "../../stores/useItineraryStore";
-import { HARDCODED_TEST_USER } from "../../utils/constants";
 
 const EditItineraryModal = ({ opened, onClose, itinerary }) => {
   const [title, setTitle] = useState(itinerary?.title || "");
@@ -45,19 +44,15 @@ const EditItineraryModal = ({ opened, onClose, itinerary }) => {
       const totalDays =
         Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
-      await updateItineraryAPI(
-        itinerary.id,
-        {
-          title,
-          start_date: startDate.toISOString().split("T")[0],
-          end_date: endDate.toISOString().split("T")[0],
-          total_days: totalDays,
-        },
-        HARDCODED_TEST_USER.userId
-      );
+      await updateItineraryAPI(itinerary.id, {
+        title,
+        start_date: startDate.toISOString().split("T")[0],
+        end_date: endDate.toISOString().split("T")[0],
+        total_days: totalDays,
+      });
 
       // Refresh itineraries
-      await fetchItineraries(HARDCODED_TEST_USER.userId);
+      await fetchItineraries();
 
       notifications.show({
         title: "Success",

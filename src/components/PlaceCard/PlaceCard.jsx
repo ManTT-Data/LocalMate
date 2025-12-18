@@ -18,7 +18,6 @@ import {
   optimizeItineraryAPI,
 } from "../../apis/itineraryService";
 import { addStopAPI } from "../../apis/stopService";
-import { HARDCODED_TEST_USER } from "../../utils/constants";
 import useItineraryStore from "../../stores/useItineraryStore";
 
 // Category icon mapping
@@ -86,9 +85,7 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
 
       // Step 1: Check if user already has an itinerary
       try {
-        const existingItineraries = await fetchUserItinerariesAPI(
-          HARDCODED_TEST_USER.userId
-        );
+        const existingItineraries = await fetchUserItinerariesAPI();
 
         if (existingItineraries && existingItineraries.length > 0) {
           // Use the first (most recent) itinerary
@@ -107,16 +104,13 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
         tomorrow.setDate(tomorrow.getDate() + 1);
         const endDate = tomorrow.toISOString().split("T")[0];
 
-        const itineraryResponse = await createItineraryAPI(
-          {
-            title: `My Da Nang Trip`,
-            startDate,
-            endDate,
-            totalBudget: 0,
-            currency: "VND",
-          },
-          HARDCODED_TEST_USER.userId
-        );
+        const itineraryResponse = await createItineraryAPI({
+          title: `My Da Nang Trip`,
+          startDate,
+          endDate,
+          totalBudget: 0,
+          currency: "VND",
+        });
 
         itineraryId = itineraryResponse?.itinerary?.id;
 
@@ -163,20 +157,13 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
       });
 
       // Step 5: Add stop to itinerary using stopService
-      const stopResponse = await addStopAPI(
-        itineraryId,
-        stopData,
-        HARDCODED_TEST_USER.userId
-      );
+      const stopResponse = await addStopAPI(itineraryId, stopData);
 
       console.log("✅ Stop added successfully:", stopResponse);
 
       // Step 6: Refresh itinerary to update UI immediately
       try {
-        const updatedItinerary = await fetchItineraryByIdAPI(
-          itineraryId,
-          HARDCODED_TEST_USER.userId
-        );
+        const updatedItinerary = await fetchItineraryByIdAPI(itineraryId);
         if (updatedItinerary?.days) {
           setItinerary(updatedItinerary.days);
           console.log("✅ Itinerary refreshed, UI updated");

@@ -83,15 +83,7 @@ const TimelineStop = ({ stop, onItemClick, provided, snapshot, dayIndex }) => {
           });
 
           try {
-            const { HARDCODED_TEST_USER } = await import(
-              "../../utils/constants"
-            );
-            await deleteStopBackend(
-              currentItinerary.id,
-              dayIndex,
-              stop.id,
-              HARDCODED_TEST_USER.userId
-            );
+            await deleteStopBackend(currentItinerary.id, dayIndex, stop.id);
             notifications.show({
               title: "Success",
               message: "Stop removed from itinerary",

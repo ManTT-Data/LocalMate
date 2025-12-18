@@ -4,7 +4,8 @@
  */
 
 import apiHelper from "../utils/apiHelper";
-import { apiUrls, HARDCODED_TEST_USER } from "../utils/constants";
+import { apiUrls } from "../utils/constants";
+import { getCurrentUserId } from "../utils/authHelpers";
 
 /**
  * Fetch all stops for a specific itinerary
@@ -12,13 +13,11 @@ import { apiUrls, HARDCODED_TEST_USER } from "../utils/constants";
  * @param {string} userId - User ID
  * @returns {Promise<Array>} List of stops
  */
-export const fetchItineraryStopsAPI = async (
-  itineraryId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const fetchItineraryStopsAPI = async (itineraryId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   // Stops are included when fetching itinerary
   const response = await apiHelper.get(
-    `${apiUrls.itinerary.get(itineraryId)}?user_id=${userId}`
+    `${apiUrls.itinerary.get(itineraryId)}?user_id=${actualUserId}`
   );
   return response?.itinerary?.stops || [];
 };
@@ -30,11 +29,8 @@ export const fetchItineraryStopsAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Created stop
  */
-export const addStopAPI = async (
-  itineraryId,
-  stopData,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const addStopAPI = async (itineraryId, stopData, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const {
     place_id,
     day_index = 1,
@@ -63,7 +59,7 @@ export const addStopAPI = async (
   });
 
   const response = await apiHelper.post(
-    `${apiUrls.itinerary.addStop(itineraryId)}?user_id=${userId}`,
+    `${apiUrls.itinerary.addStop(itineraryId)}?user_id=${actualUserId}`,
     requestBody
   );
 
@@ -78,14 +74,13 @@ export const addStopAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Update result
  */
-export const updateStopAPI = async (
-  itineraryId,
-  stopId,
-  updates,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const updateStopAPI = async (itineraryId, stopId, updates, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.put(
-    `${apiUrls.itinerary.updateStop(itineraryId, stopId)}?user_id=${userId}`,
+    `${apiUrls.itinerary.updateStop(
+      itineraryId,
+      stopId
+    )}?user_id=${actualUserId}`,
     updates
   );
 
@@ -99,13 +94,13 @@ export const updateStopAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Delete result
  */
-export const deleteStopAPI = async (
-  itineraryId,
-  stopId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const deleteStopAPI = async (itineraryId, stopId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.delete(
-    `${apiUrls.itinerary.deleteStop(itineraryId, stopId)}?user_id=${userId}`
+    `${apiUrls.itinerary.deleteStop(
+      itineraryId,
+      stopId
+    )}?user_id=${actualUserId}`
   );
 
   return response;
@@ -123,8 +118,9 @@ export const reorderStopsAPI = async (
   itineraryId,
   dayIndex,
   stopIds,
-  userId = HARDCODED_TEST_USER.userId
+  userId
 ) => {
+  const actualUserId = getCurrentUserId(userId);
   // Update each stop's order_index
   const updatePromises = stopIds.map((stopId, index) =>
     updateStopAPI(
@@ -159,8 +155,9 @@ export const moveStopToDayAPI = async (
   fromDayIndex,
   toDayIndex,
   toOrderIndex = 1,
-  userId = HARDCODED_TEST_USER.userId
+  userId
 ) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await updateStopAPI(
     itineraryId,
     stopId,
@@ -181,11 +178,8 @@ export const moveStopToDayAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Array>} Created stops
  */
-export const bulkAddStopsAPI = async (
-  itineraryId,
-  stops,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const bulkAddStopsAPI = async (itineraryId, stops, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const createPromises = stops.map((stopData) =>
     addStopAPI(itineraryId, stopData, userId)
   );
@@ -201,11 +195,8 @@ export const bulkAddStopsAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Array>} Stops for the day
  */
-export const fetchDayStopsAPI = async (
-  itineraryId,
-  dayIndex,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const fetchDayStopsAPI = async (itineraryId, dayIndex, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const allStops = await fetchItineraryStopsAPI(itineraryId, userId);
   return allStops
     .filter((stop) => stop.day_index === dayIndex)
@@ -226,8 +217,9 @@ export const updateStopTimingAPI = async (
   stopId,
   arrivalTime,
   stayMinutes,
-  userId = HARDCODED_TEST_USER.userId
+  userId
 ) => {
+  const actualUserId = getCurrentUserId(userId);
   return await updateStopAPI(
     itineraryId,
     stopId,
@@ -247,12 +239,8 @@ export const updateStopTimingAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Update result
  */
-export const addStopNotesAPI = async (
-  itineraryId,
-  stopId,
-  notes,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const addStopNotesAPI = async (itineraryId, stopId, notes, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   return await updateStopAPI(
     itineraryId,
     stopId,
@@ -271,12 +259,8 @@ export const addStopNotesAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Update result
  */
-export const addStopTagsAPI = async (
-  itineraryId,
-  stopId,
-  tags,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const addStopTagsAPI = async (itineraryId, stopId, tags, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   return await updateStopAPI(
     itineraryId,
     stopId,
@@ -293,10 +277,8 @@ export const addStopTagsAPI = async (
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Stop statistics
  */
-export const getStopStatsAPI = async (
-  itineraryId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const getStopStatsAPI = async (itineraryId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const stops = await fetchItineraryStopsAPI(itineraryId, userId);
 
   const totalStops = stops.length;

@@ -4,7 +4,8 @@
  */
 
 import apiHelper from "../utils/apiHelper";
-import { apiUrls, HARDCODED_TEST_USER } from "../utils/constants";
+import { apiUrls } from "../utils/constants";
+import { getCurrentUserId } from "../utils/authHelpers";
 
 /**
  * Create a new plan
@@ -134,12 +135,10 @@ export const reorderPlan = async (planId, order, userId) => {
  * @param {string} userId - User ID (defaults to test user)
  * @returns {Promise<Object>} Optimized plan with routes
  */
-export const optimizePlan = async (
-  planId,
-  userId = HARDCODED_TEST_USER.userId
-) => {
+export const optimizePlan = async (planId, userId) => {
+  const actualUserId = getCurrentUserId(userId);
   const response = await apiHelper.post(
-    `${apiUrls.planner.optimize(planId)}?user_id=${userId}`
+    `${apiUrls.planner.optimize(planId)}?user_id=${actualUserId}`
   );
 
   return response;

@@ -11,7 +11,6 @@ import {
   fetchItineraryByIdAPI,
   deleteItineraryAPI,
 } from "../apis/itineraryService";
-import { HARDCODED_TEST_USER } from "../utils/constants";
 import useItineraryStore from "../stores/useItineraryStore";
 import {
   Box,
@@ -62,9 +61,7 @@ const AiItinerary = () => {
       setLoading(true);
       try {
         // Fetch all itineraries for the user
-        const itineraries = await fetchUserItinerariesAPI(
-          HARDCODED_TEST_USER.userId
-        );
+        const itineraries = await fetchUserItinerariesAPI();
 
         if (itineraries && itineraries.length > 0) {
           // Store the itinerary ID for direct stop operations
@@ -72,10 +69,7 @@ const AiItinerary = () => {
           setCurrentItineraryId(itineraryId);
 
           // Get the first (most recent) itinerary with full details
-          const firstItinerary = await fetchItineraryByIdAPI(
-            itineraryId,
-            HARDCODED_TEST_USER.userId
-          );
+          const firstItinerary = await fetchItineraryByIdAPI(itineraryId);
 
           // Set metadata from backend
           if (firstItinerary) {
@@ -176,19 +170,12 @@ const AiItinerary = () => {
       };
 
       // Add stop directly to itinerary_stops table
-      const response = await addStopAPI(
-        currentItineraryId,
-        backendStopData,
-        HARDCODED_TEST_USER.userId
-      );
+      const response = await addStopAPI(currentItineraryId, backendStopData);
 
       console.log("✅ Stop added successfully:", response);
 
       // Refresh itinerary to show the new stop
-      const updatedItinerary = await fetchItineraryByIdAPI(
-        currentItineraryId,
-        HARDCODED_TEST_USER.userId
-      );
+      const updatedItinerary = await fetchItineraryByIdAPI(currentItineraryId);
 
       if (updatedItinerary?.days) {
         setItinerary(updatedItinerary.days);
@@ -221,10 +208,7 @@ const AiItinerary = () => {
       confirmProps: { color: "red" },
       onConfirm: async () => {
         try {
-          await deleteItineraryAPI(
-            currentItineraryId,
-            HARDCODED_TEST_USER.userId
-          );
+          await deleteItineraryAPI(currentItineraryId);
           notifications.show({
             title: "Success",
             message: "Itinerary deleted successfully",
