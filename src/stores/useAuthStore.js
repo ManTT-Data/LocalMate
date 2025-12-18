@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { HARDCODED_TEST_USER } from "../utils/constants";
 
 /**
  * Auth Store - Manages user authentication state
  * Persists user data to localStorage
+ * Uses real user data from Google OAuth login
  */
 const useAuthStore = create(
   persist(
@@ -19,6 +19,7 @@ const useAuthStore = create(
       /**
        * Set user after successful login
        * @param {Object} userData - User data from Google OAuth or other auth provider
+       * Expected format: { userId/id, email, fullName/name, avatarUrl/picture, sessionId? }
        */
       setUser: (userData) => {
         set({
@@ -47,60 +48,48 @@ const useAuthStore = create(
       // ========== Helpers ==========
 
       /**
-       * Get current user ID with fallback to test user
-       * Priority: 1. Real user, 2. Test user
-       * @returns {string} User ID
+       * Get current user ID
+       * @returns {string|null} User ID or null if not authenticated
        */
       getUserId: () => {
         const state = get();
-        if (state.user?.userId) return state.user.userId;
-        if (state.user?.id) return state.user.id;
-        // Fallback to hardcoded test user for development
-        return HARDCODED_TEST_USER.userId;
+        return state.user?.userId || state.user?.id || null;
       },
 
       /**
        * Get current user email
-       * @returns {string} User email
+       * @returns {string|null} User email or null if not authenticated
        */
       getUserEmail: () => {
         const state = get();
-        return state.user?.email || HARDCODED_TEST_USER.email;
+        return state.user?.email || null;
       },
 
       /**
        * Get current user full name
-       * @returns {string} User full name
+       * @returns {string|null} User full name or null if not authenticated
        */
       getUserName: () => {
         const state = get();
-        return (
-          state.user?.fullName ||
-          state.user?.name ||
-          HARDCODED_TEST_USER.fullName
-        );
+        return state.user?.fullName || state.user?.name || null;
       },
 
       /**
        * Get current user avatar URL
-       * @returns {string} Avatar URL
+       * @returns {string|null} Avatar URL or null if not authenticated
        */
       getUserAvatar: () => {
         const state = get();
-        return (
-          state.user?.avatarUrl ||
-          state.user?.picture ||
-          HARDCODED_TEST_USER.avatarUrl
-        );
+        return state.user?.avatarUrl || state.user?.picture || null;
       },
 
       /**
        * Get session ID for chat
-       * @returns {string} Session ID
+       * @returns {string|null} Session ID or null if not available
        */
       getSessionId: () => {
         const state = get();
-        return state.user?.sessionId || HARDCODED_TEST_USER.sessionId;
+        return state.user?.sessionId || null;
       },
     }),
     {

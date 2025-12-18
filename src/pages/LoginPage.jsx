@@ -4,13 +4,13 @@ import { IconBrandGoogle, IconAlertCircle } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { loginWithGoogleAPI } from "../apis/authService";
 import { googlClientId } from "../utils/constants";
-import useUserStore from "../stores/useUserStore";
+import useAuthStore from "../stores/useAuthStore";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const setUser = useUserStore((state) => state.setUser);
+  const setUser = useAuthStore((state) => state.setUser);
 
   const handleGoogleLogin = () => {
     setLoading(true);
@@ -28,12 +28,12 @@ const LoginPage = () => {
               );
               console.log("Login successful:", loginResponse);
 
-              // Save user data to Zustand store
+              // Save user data to Auth store with proper format
               setUser({
-                id: loginResponse.user_id,
+                userId: loginResponse.user_id,
                 email: loginResponse.email,
-                name: loginResponse.full_name,
-                avatar: loginResponse.avatar_url,
+                fullName: loginResponse.full_name,
+                avatarUrl: loginResponse.avatar_url,
               });
 
               navigate("/map");

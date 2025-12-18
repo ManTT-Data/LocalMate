@@ -4,22 +4,22 @@ import appRoutes from "./routes/routes";
 import { useRoutes } from "react-router-dom";
 import { useEffect } from "react";
 import { getCurrentUser } from "./apis/authService";
-import useUserStore from "./stores/useUserStore";
+import useAuthStore from "./stores/useAuthStore";
 
 import "./App.css";
 
 function App() {
-  const setUser = useUserStore((state) => state.setUser);
+  const setUser = useAuthStore((state) => state.setUser);
 
   // Restore user session from localStorage on app mount
   useEffect(() => {
     const currentUser = getCurrentUser();
     if (currentUser) {
       setUser({
-        id: currentUser.userId,
+        userId: currentUser.userId,
         email: currentUser.email,
-        name: currentUser.fullName,
-        avatar: currentUser.avatarUrl,
+        fullName: currentUser.fullName,
+        avatarUrl: currentUser.avatarUrl,
       });
     }
   }, [setUser]);

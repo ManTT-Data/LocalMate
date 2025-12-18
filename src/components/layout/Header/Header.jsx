@@ -6,11 +6,9 @@ import {
   ActionIcon,
   Avatar,
   Divider,
-  Badge,
 } from "@mantine/core";
 import { Link, useLocation } from "react-router-dom";
 import { IconBell, IconMapSearch } from "@tabler/icons-react";
-import useUserStore from "../../../stores/useUserStore";
 import useAuthStore from "../../../stores/useAuthStore";
 
 const navigationLinks = [
@@ -22,17 +20,17 @@ const navigationLinks = [
 
 const Header = () => {
   const location = useLocation();
-  const user = useUserStore((state) => state.user);
   const { getUserName, getUserAvatar, getUserEmail, isAuthenticated } =
     useAuthStore();
 
-  // Use real user from auth store, fallback to test user
-  const currentUser = {
-    name: getUserName(),
-    avatar: getUserAvatar(),
-    email: getUserEmail(),
-    isTestUser: !isAuthenticated,
-  };
+  // Get current user from auth store
+  const currentUser = isAuthenticated
+    ? {
+        name: getUserName(),
+        avatar: getUserAvatar(),
+        email: getUserEmail(),
+      }
+    : null;
 
   return (
     <Group
@@ -107,13 +105,6 @@ const Header = () => {
                 ? currentUser.name.charAt(0).toUpperCase()
                 : null}
             </Avatar>
-
-            {/* Show test user badge in development */}
-            {currentUser?.isTestUser && (
-              <Badge size="xs" color="yellow" variant="light">
-                Test User
-              </Badge>
-            )}
           </Group>
         </Group>
       </Group>
