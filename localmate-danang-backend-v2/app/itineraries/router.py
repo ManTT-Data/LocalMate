@@ -44,6 +44,16 @@ async def create_itinerary(
     # Validate user_id is a valid UUID
     validate_uuid(user_id, "user_id")
     
+    # Ensure profile exists (auto-create if needed for demo purposes)
+    await db.execute(
+        text("""
+            INSERT INTO profiles (id, full_name, role, locale)
+            VALUES (:user_id, 'Anonymous User', 'tourist', 'vi_VN')
+            ON CONFLICT (id) DO NOTHING
+        """),
+        {"user_id": user_id}
+    )
+    
     result = await db.execute(
         text("""
             INSERT INTO itineraries (user_id, title, start_date, end_date, total_days, total_budget, currency)
