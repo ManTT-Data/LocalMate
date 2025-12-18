@@ -78,14 +78,12 @@ async def login_control(access_token: str, db: AsyncSession) -> dict:
             detail="Email not provided by Google"
         )
     
-    # Check if user exists
+    # Check if user exists by email in profiles table
     result = await db.execute(
         text("""
-            SELECT id, full_name, avatar_url, role
-            FROM profiles
-            WHERE id = (
-                SELECT id FROM auth.users WHERE email = :email
-            )
+            SELECT p.id, p.full_name, p.avatar_url, p.role, p.email
+            FROM profiles p
+            WHERE p.email = :email
         """),
         {"email": email}
     )
@@ -106,28 +104,57 @@ async def login_control(access_token: str, db: AsyncSession) -> dict:
             )
             await db.commit()
     else:
-        # Create new user
-        user_id = str(uuid4())
+        # Create new user using Supabase Admin API
+        from app.shared.integrations.supabase_client import supabase
         
-        # Create auth.users entry (assuming Supabase-like schema)
+        try:
+            # Create user in auth.users using Supabase Admin API
+            auth_response = supabase.auth.admin.create_user({
+                "email": email,
+                "email_confirm": True,  # Auto-confirm email for OAuth users
+                "user_metadata": {
+                    "full_name": full_name,
+                    "avatar_url": avatar_url,
+                    "provider": "google"
+                }
+            })
+            
+            user_id = auth_response.user.id
+            
+        except Exception as e:
+            # If user already exists in auth.users, try to get their ID
+            try:
+                # Query auth.users to get existing user
+                auth_result = await db.execute(
+                    text("SELECT id FROM auth.users WHERE email = :email"),
+                    {"email": email}
+                )
+                auth_row = auth_result.fetchone()
+                
+                if auth_row:
+                    user_id = str(auth_row.id)
+                else:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to create or retrieve user: {str(e)}"
+                    )
+            except Exception as inner_e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to create user: {str(e)}, {str(inner_e)}"
+                )
+        
+        # Create profile in profiles table
         await db.execute(
             text("""
-                INSERT INTO auth.users (id, email, created_at)
-                VALUES (:id, :email, NOW())
-                ON CONFLICT (email) DO UPDATE SET email = :email
-                RETURNING id
-            """),
-            {"id": user_id, "email": email}
-        )
-        
-        # Create profile
-        await db.execute(
-            text("""
-                INSERT INTO profiles (id, full_name, avatar_url, role, locale, created_at, updated_at)
-                VALUES (:id, :full_name, :avatar_url, 'tourist', 'vi_VN', NOW(), NOW())
+                INSERT INTO profiles (id, email, full_name, avatar_url, role, locale, created_at, updated_at)
+                VALUES (:id, :email, :full_name, :avatar_url, 'tourist', 'vi_VN', NOW(), NOW())
+                ON CONFLICT (id) DO UPDATE 
+                SET email = :email, full_name = :full_name, avatar_url = :avatar_url, updated_at = NOW()
             """),
             {
                 "id": user_id,
+                "email": email,
                 "full_name": full_name,
                 "avatar_url": avatar_url
             }
