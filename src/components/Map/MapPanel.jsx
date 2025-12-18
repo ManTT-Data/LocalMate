@@ -8,8 +8,10 @@ import ContextualToolbar from "../ContextualToolbar/ContextualToolbar";
 import TripBadge from "../TripBadge/TripBadge";
 import DestinationCard from "../DestinationCard/DestinationCard";
 import GrabBookingWidget from "../BookingWidget/GrabBookingWidget";
+import HotelBookingWidget from "../BookingWidget/HotelBookingWidget";
 import { findNearbyPlaces } from "../../apis/aiService";
 import useGeolocation from "../../hooks/useGeolocation";
+import useAiPlacesStore from "../../stores/useAiPlacesStore";
 
 // Fix for default marker icons in Leaflet with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -35,18 +37,22 @@ const userIcon = new L.DivIcon({
   iconAnchor: [0, 0], // Anchor at the map coordinates (which we align to center of dot via CSS)
 });
 
-const createDestinationIcon = (destination) => {
+const createDestinationIcon = (destination, isAiPlace = false) => {
+  // Use purple color for AI-suggested places, black for regular
+  const bgColor = isAiPlace ? "bg-purple-600" : "bg-black";
+  const borderColor = isAiPlace ? "border-t-purple-600" : "border-t-black";
+
   return new L.DivIcon({
     className: "custom-marker",
     html: `
       <div class="flex flex-col items-center" style="transform: translate(-50%, -100%);">
         <div class="relative flex flex-col items-center">
-          <div class="bg-black text-white p-2 rounded-lg shadow-lg flex items-center gap-2 hover:scale-110 transition-transform">
+          <div class="${bgColor} text-white p-2 rounded-lg shadow-lg flex items-center gap-2 hover:scale-110 transition-transform">
             <span class="material-symbols-outlined text-[18px]">temple_buddhist</span>
             <span class="font-bold text-sm whitespace-nowrap">${destination.name}</span>
           </div>
           <!-- Triangle pointer below the box -->
-          <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-black -mt-[1px]"></div>
+          <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] ${borderColor} -mt-[1px]"></div>
         </div>
       </div>
     `,
@@ -61,72 +67,27 @@ const MapPanel = () => {
   const center = [16.060793, 108.216996]; // Da Nang center
   const { location: userLocation, error: locationError } = useGeolocation();
   const [mapInstance, setMapInstance] = useState(null);
-  const [destinations, setDestinations] = useState([]);
-  const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
-  const [destinationsError, setDestinationsError] = useState(null);
 
-  // Fallback user location for marker (mock data)
-  const fallbackUserLocation = {
-    lat: 16.012855984,
-    lng: 108.263785,
-  };
+  // Get AI places from store (shared with ChatPanel)
+  const { aiPlaces } = useAiPlacesStore();
 
-  // Fetch nearby destinations on mount
-  useEffect(() => {
-    const fetchDestinations = async () => {
-      try {
-        setIsLoadingDestinations(true);
-        setDestinationsError(null);
-
-        // Use user location if available, otherwise use Da Nang center
-        const searchLat = userLocation.loaded
-          ? userLocation.coordinates.lat
-          : center[0];
-        const searchLng = userLocation.loaded
-          ? userLocation.coordinates.lng
-          : center[1];
-
-        // Fetch nearby places within 10km radius
-        const response = await findNearbyPlaces(searchLat, searchLng, {
-          maxDistanceKm: 10.0,
-          limit: 50,
-        });
-
-        if (response?.places) {
-          // Transform backend places to match expected destination format
-          const transformedDestinations = response.places.map((place) => ({
-            id: place.place_id,
-            name: place.name,
-            description: place.description || `A ${place.category} in Da Nang`,
-            location: {
-              lat: place.lat,
-              lng: place.lng,
-            },
-            type: place.category || "Place",
-            category: place.category,
-            rating: place.rating,
-            distance_km: place.distance_km,
-          }));
-
-          setDestinations(transformedDestinations);
-        } else {
-          setDestinations([]);
-        }
-      } catch (error) {
-        console.error("Error fetching destinations:", error);
-        setDestinationsError(error.message);
-        setDestinations([]); // Fallback to empty array
-      } finally {
-        setIsLoadingDestinations(false);
-      }
-    };
-
-    fetchDestinations();
-  }, [
-    userLocation.loaded,
-    userLocation.coordinates.lat,
-    userLocation.coordinates.lng,
-  ]);
+  // Transform AI places to destination format for map display
+  const destinations = aiPlaces.map((place) => ({
+    id: place.place_id,
+    name: place.name,
+    description: `${place.category || "Place"} - Rating: ${
+      place.rating || "N/A"
+    }`,
+    location: {
+      lat: place.lat,
+      lng: place.lng,
+    },
+    type: place.category || "Place",
+    category: place.category,
+    rating: place.rating,
+    distance_km: place.distance_km,
+    address: place.address,
+  }));
 
   const handleMarkerClick = (destination) => {
     setSelectedDestination(destination);
@@ -185,6 +146,32 @@ const MapPanel = () => {
         </Box>
       </Box>
 
+      {!userLocation.loaded && !locationError && (
+        <Box
+          style={{
+            position: "absolute",
+            top: "5rem",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+            backgroundColor: "rgba(33, 150, 243, 0.95)",
+            color: "white",
+            padding: "0.75rem 1.5rem",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            pointerEvents: "auto",
+            maxWidth: "90%",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Loader size="sm" color="white" />
+            <div style={{ fontSize: "14px" }}>
+              ⏳ Đang lấy vị trí của bạn...
+            </div>
+          </div>
+        </Box>
+      )}
+
       {/* Map Container */}
       <Box w="100%" h="100%" style={{ position: "relative" }}>
         <MapContainer
@@ -200,8 +187,8 @@ const MapPanel = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {/* User Location Marker */}
-          {userLocation.loaded && !locationError ? (
+          {/* User Location Marker - Only real location */}
+          {userLocation.loaded && userLocation.coordinates.lat ? (
             <Marker
               position={[
                 userLocation.coordinates.lat,
@@ -209,52 +196,48 @@ const MapPanel = () => {
               ]}
               icon={userIcon}
             >
-              <Popup>Your current location</Popup>
+              <Popup>
+                <h3 className="font-bold">Vị trí của bạn</h3>
+              </Popup>
             </Marker>
+          ) : locationError ? (
+            // Show error state in console
+            <>{console.warn("Location error:", locationError)}</>
           ) : (
-            // Fallback to static user location if no geolocation
-            <Marker
-              position={[fallbackUserLocation.lat, fallbackUserLocation.lng]}
-              icon={userIcon}
-            >
-              <Popup>Your location (Default)</Popup>
-            </Marker>
+            // Show loading state in console
+            <>{console.log("⏳ Đang tải vị trí của bạn...")}</>
           )}
 
-          {/* Destination Markers */}
-          {isLoadingDestinations
-            ? // Show loading indicator (optional - can be removed if loading state shown elsewhere)
-              null
-            : destinationsError
-            ? // No markers if error
-              null
-            : destinations.map((destination) => (
-                <Marker
-                  key={destination.id}
-                  position={[
-                    destination.location.lat,
-                    destination.location.lng,
-                  ]}
-                  icon={createDestinationIcon(destination)}
-                  eventHandlers={{
-                    click: () => handleMarkerClick(destination),
-                  }}
-                >
-                  <Popup>
-                    <div className="p-2">
-                      <h3 className="font-bold">{destination.name}</h3>
-                      <p className="text-sm text-slate-600">
-                        {destination.description}
-                      </p>
-                      {destination.distance_km && (
-                        <p className="text-xs text-slate-500 mt-1">
-                          {destination.distance_km.toFixed(2)} km away
-                        </p>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
+          {/* AI-suggested Place Markers */}
+          {destinations.map((destination) => (
+            <Marker
+              key={destination.id}
+              position={[destination.location.lat, destination.location.lng]}
+              icon={createDestinationIcon(destination, true)}
+              eventHandlers={{
+                click: () => handleMarkerClick(destination),
+              }}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-bold">{destination.name}</h3>
+                  <p className="text-sm text-slate-600">
+                    {destination.description}
+                  </p>
+                  {destination.rating && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      ⭐ {destination.rating}
+                    </p>
+                  )}
+                  {destination.distance_km && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      {destination.distance_km.toFixed(2)} km away
+                    </p>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
 
         {/* Locate Me Button */}
@@ -302,6 +285,7 @@ const MapPanel = () => {
                 }}
               />
               <GrabBookingWidget onClose={handleCloseCards} />
+              <HotelBookingWidget onClose={handleCloseCards} />
             </Stack>
           </Box>
         )}

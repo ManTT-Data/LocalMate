@@ -8,16 +8,19 @@ import {
   Avatar,
   ActionIcon,
   Collapse,
+  Badge,
+  Stack,
 } from "@mantine/core";
 import {
   IconArrowRight,
   IconChevronDown,
   IconChevronUp,
   IconX,
+  IconStar,
 } from "@tabler/icons-react";
-import { grabBooking } from "../../data/mockData";
+import { hotelBooking } from "../../data/mockData";
 
-const GrabBookingWidget = ({ onClose }) => {
+const HotelBookingWidget = ({ onClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
@@ -45,24 +48,24 @@ const GrabBookingWidget = ({ onClose }) => {
             size="sm"
             radius="xl"
             style={{
-              backgroundColor: "#00B14F",
+              backgroundColor: "#003580",
               fontWeight: 700,
               fontSize: "10px",
             }}
             color="white"
           >
-            Grab
+            B.com
           </Avatar>
           <Text size="sm" fw={700}>
-            Ride Recommendation
+            Hotel Recommendation
           </Text>
         </Group>
 
         <Group gap={4}>
           {!isCollapsed && (
-            <Text size="xs" c="dimmed" mr="xs">
-              {grabBooking.eta}
-            </Text>
+            <Badge size="xs" color="blue" variant="light" mr="xs">
+              {hotelBooking.nights}
+            </Badge>
           )}
           <ActionIcon
             size="sm"
@@ -94,7 +97,7 @@ const GrabBookingWidget = ({ onClose }) => {
       </Group>
 
       <Collapse in={!isCollapsed}>
-        {/* Car Selection */}
+        {/* Hotel Selection */}
         <Paper
           p="sm"
           radius="lg"
@@ -108,33 +111,64 @@ const GrabBookingWidget = ({ onClose }) => {
           styles={{
             root: {
               "&:hover": {
-                borderColor: "rgba(19, 182, 236, 0.5)",
+                borderColor: "rgba(0, 53, 128, 0.5)",
               },
             },
           }}
         >
-          <Group justify="space-between" wrap="nowrap">
+          <Group gap="sm" align="flex-start" wrap="nowrap">
             <Box
-              w={48}
-              h={32}
+              w={80}
+              h={60}
               style={{
-                backgroundImage: `url("${grabBooking.carImage}")`,
-                backgroundSize: "contain",
+                backgroundImage: `url("${hotelBooking.hotelImage}")`,
+                backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",
+                borderRadius: "8px",
+                flexShrink: 0,
               }}
             />
-            <Box flex={1}>
-              <Text size="sm" fw={700}>
-                {grabBooking.carType}
+            <Stack gap={4} flex={1}>
+              <Group gap={4}>
+                <IconStar size={14} fill="#fbbf24" color="#fbbf24" />
+                <Text size="xs" c="dimmed">
+                  {hotelBooking.rating} ({hotelBooking.reviews} reviews)
+                </Text>
+              </Group>
+              <Text size="sm" fw={700} lineClamp={1}>
+                {hotelBooking.hotelName}
               </Text>
               <Text size="xs" c="dimmed">
-                {grabBooking.carDescription}
+                {hotelBooking.hotelDescription}
               </Text>
-            </Box>
-            <Text size="sm" fw={700}>
-              {grabBooking.price}
-            </Text>
+              <Text size="xs" c="dimmed">
+                {hotelBooking.roomType}
+              </Text>
+            </Stack>
+            <Stack gap={0} align="flex-end">
+              <Text size="sm" fw={700}>
+                {hotelBooking.price}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {hotelBooking.pricePerNight}
+              </Text>
+            </Stack>
+          </Group>
+
+          {/* Amenities */}
+          <Group gap={4} mt="xs">
+            {hotelBooking.amenities.map((amenity, index) => (
+              <Badge
+                key={index}
+                size="xs"
+                variant="light"
+                color="blue"
+                radius="sm"
+              >
+                {amenity}
+              </Badge>
+            ))}
           </Group>
         </Paper>
 
@@ -145,18 +179,18 @@ const GrabBookingWidget = ({ onClose }) => {
           radius="lg"
           rightSection={<IconArrowRight size={18} />}
           style={{
-            backgroundColor: "var(--neutral-900)",
+            backgroundColor: "#003580",
             transition: "all 0.2s",
           }}
           onClick={() => {
-            window.open(grabBooking.bookingUrl, "_blank");
+            window.open(hotelBooking.bookingUrl, "_blank");
           }}
         >
-          Book Grab Now
+          Book on Booking.com
         </Button>
       </Collapse>
     </Paper>
   );
 };
 
-export default GrabBookingWidget;
+export default HotelBookingWidget;

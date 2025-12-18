@@ -23,6 +23,8 @@ const BookingItemCard = ({ booking, onEdit, onRemove }) => {
         return "#3b82f6";
       case "reservation":
         return "#f97316";
+      case "accommodation":
+        return "#003580";
       default:
         return "gray";
     }
@@ -47,7 +49,7 @@ const BookingItemCard = ({ booking, onEdit, onRemove }) => {
             style={{ cursor: "pointer" }}
             onClick={() => onEdit?.(booking)}
           >
-            Edit
+            Book on Grab
           </Text>
           <ActionIcon
             variant="subtle"
@@ -120,6 +122,42 @@ const BookingItemCard = ({ booking, onEdit, onRemove }) => {
             onClick={() => onEdit?.(booking)}
           >
             Change Time
+          </Text>
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            size="sm"
+            onClick={() => onRemove?.(booking)}
+          >
+            <IconTrash size={18} />
+          </ActionIcon>
+          <Text
+            size="sm"
+            fw={700}
+            c="red"
+            style={{ cursor: "pointer" }}
+            onClick={() => onRemove?.(booking)}
+          >
+            Cancel
+          </Text>
+        </Group>
+      );
+    }
+
+    if (booking.bookingType === "accommodation") {
+      return (
+        <Group gap="md">
+          <ActionIcon variant="subtle" color="gray" size="sm">
+            <IconEdit size={18} />
+          </ActionIcon>
+          <Text
+            size="sm"
+            fw={700}
+            c="dimmed"
+            style={{ cursor: "pointer" }}
+            onClick={() => onEdit?.(booking)}
+          >
+            Book on Booking.com
           </Text>
           <ActionIcon
             variant="subtle"
@@ -301,6 +339,20 @@ const BookingItemCard = ({ booking, onEdit, onRemove }) => {
                     </Text>
                   </Group>
                 )}
+                {booking.bookingType === "accommodation" && (
+                  <Group gap="md" mt={8}>
+                    <Badge size="sm" variant="light">
+                      {booking.bookingDetails.roomType}
+                    </Badge>
+                    <Text size="sm" c="dimmed">
+                      •
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      {booking.bookingDetails.nights} night
+                      {booking.bookingDetails.nights > 1 ? "s" : ""}
+                    </Text>
+                  </Group>
+                )}
               </div>
               <div style={{ textAlign: "right" }}>
                 <Text fw={700} size="lg">
@@ -315,6 +367,11 @@ const BookingItemCard = ({ booking, onEdit, onRemove }) => {
                 {booking.bookingType === "reservation" && (
                   <Text size="xs" c="dimmed">
                     {booking.bookingDetails.paymentNote}
+                  </Text>
+                )}
+                {booking.bookingType === "accommodation" && (
+                  <Text size="xs" c="dimmed">
+                    per night
                   </Text>
                 )}
               </div>

@@ -6,12 +6,13 @@ import {
   ActionIcon,
   Avatar,
   Divider,
+  Badge,
 } from "@mantine/core";
 import { Link, useLocation } from "react-router-dom";
 import { IconBell, IconMapSearch } from "@tabler/icons-react";
-import { userProfile } from "../../../data/mockData";
+import useUserStore from "../../../stores/useUserStore";
+import { HARDCODED_TEST_USER } from "../../../utils/constants";
 
-// Navigation links (moved from mockData.js)
 const navigationLinks = [
   { id: 1, label: "Home", href: "/", active: false },
   { id: 2, label: "My Trips", href: "/ai-itinerary", active: false },
@@ -21,6 +22,15 @@ const navigationLinks = [
 
 const Header = () => {
   const location = useLocation();
+  const user = useUserStore((state) => state.user);
+
+  // Use hardcoded test user if no real user is logged in
+  const currentUser = user || {
+    name: HARDCODED_TEST_USER.fullName,
+    avatar: HARDCODED_TEST_USER.avatarUrl,
+    email: HARDCODED_TEST_USER.email,
+    isTestUser: true,
+  };
 
   return (
     <Group
@@ -83,13 +93,26 @@ const Header = () => {
           </ActionIcon>
 
           {/* User Profile */}
-          <Avatar
-            src={userProfile.avatar}
-            alt={userProfile.name}
-            radius="xl"
-            size="md"
-            style={{ cursor: "pointer" }}
-          />
+          <Group gap="xs">
+            <Avatar
+              src={currentUser?.avatar}
+              alt={currentUser?.name || "User"}
+              radius="xl"
+              size="md"
+              style={{ cursor: "pointer" }}
+            >
+              {!currentUser?.avatar && currentUser?.name
+                ? currentUser.name.charAt(0).toUpperCase()
+                : null}
+            </Avatar>
+
+            {/* Show test user badge in development */}
+            {currentUser?.isTestUser && (
+              <Badge size="xs" color="yellow" variant="light">
+                Test User
+              </Badge>
+            )}
+          </Group>
         </Group>
       </Group>
     </Group>

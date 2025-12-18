@@ -16,7 +16,8 @@ export const transformBackendToFrontend = (backendItinerary) => {
 
   // Group stops by day_index
   const dayGroups = stops.reduce((acc, stop) => {
-    const dayIndex = stop.day_index;
+    // Backend uses 1-indexed, convert to 0-indexed for frontend
+    const dayIndex = stop.day_index - 1;
     if (!acc[dayIndex]) {
       acc[dayIndex] = [];
     }
@@ -26,7 +27,7 @@ export const transformBackendToFrontend = (backendItinerary) => {
 
   // Transform to frontend format
   return Object.entries(dayGroups).map(([dayIndex, dayStops]) => {
-    const dayNum = parseInt(dayIndex);
+    const dayNum = parseInt(dayIndex) + 1; // Display as Day 1, Day 2, etc.
     const date = calculateDate(start_date, dayNum);
 
     return {
@@ -68,8 +69,9 @@ export const transformStopToFrontend = (backendStop) => {
 /**
  * Transform frontend stop to backend format
  * @param {Object} frontendStop - Stop from frontend
- * @param {number} dayIndex - Day index (0-based)
- * @param {number} orderIndex - Order within day
+ * @param {number} dayIndex - Day index (0-based from frontend)
+ * @param {number} orderIndex - Order within day (0-based from frontend)
+ * @param {string} itineraryId - Itinerary ID
  * @returns {Object} Backend stop create format
  */
 export const transformStopToBackend = (
@@ -78,14 +80,40 @@ export const transformStopToBackend = (
   orderIndex,
   itineraryId
 ) => {
+  // Convert time string (e.g., "09:00") to datetime
+  // Use today's date if not specified
+  let arrivalTime = null;
+  if (frontendStop.time) {
+    const today = new Date();
+    const [hours, minutes] = frontendStop.time.split(":");
+    today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    arrivalTime = today.toISOString();
+  }
+
+  // Build snapshot from destination data
+  let snapshot = null;
+  if (frontendStop.destination) {
+    snapshot = {
+      name: frontendStop.destination.name,
+      category: frontendStop.destination.category,
+      address: frontendStop.destination.address,
+      rating: frontendStop.destination.rating,
+    };
+  }
+
   return {
-    day_index: dayIndex,
-    order_index: orderIndex,
-    place_id: frontendStop.destinationId || frontendStop.destination?.id,
-    arrival_time: frontendStop.time,
+    // Backend expects 1-indexed (>= 1), frontend uses 0-indexed
+    day_index: dayIndex + 1,
+    order_index: orderIndex + 1,
+    place_id:
+      frontendStop.destinationId ||
+      frontendStop.destination?.id ||
+      frontendStop.destination?.place_id,
+    arrival_time: arrivalTime,
     stay_minutes: frontendStop.stayMinutes || 60,
     notes: frontendStop.notes || null,
     tags: frontendStop.tags || [],
+    snapshot: snapshot, // Include place data for backend
   };
 };
 

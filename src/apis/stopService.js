@@ -1,365 +1,349 @@
 /**
- * Mock Backend Service for Stop/Destination Management
- * Simulates API calls for stops and destinations
+ * Stop Service - Backend API Integration for Itinerary Stops
+ * Handles all stop management with persistent database storage (itinerary_stops table)
  */
 
-import { allStops, destinations } from "../data/mockData";
+import apiHelper from "../utils/apiHelper";
+import { apiUrls, HARDCODED_TEST_USER } from "../utils/constants";
 
 /**
- * Simulate network delay
- * @param {number} min - Minimum delay in ms
- * @param {number} max - Maximum delay in ms
+ * Fetch all stops for a specific itinerary
+ * @param {string} itineraryId - Itinerary ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} List of stops
  */
-const simulateDelay = (min = 500, max = 1500) => {
-  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-  return new Promise((resolve) => setTimeout(resolve, delay));
-};
-
-/**
- * Simulate occasional API failures (10% chance)
- */
-const shouldFail = () => Math.random() < 0.1;
-
-/**
- * Fetch all available stops
- * @returns {Promise<Array>} All stops
- */
-export const fetchAllStopsAPI = async () => {
-  await simulateDelay();
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch stops");
-  }
-
-  return allStops;
-};
-
-/**
- * Fetch stop by ID
- * @param {string} stopId - Stop ID
- * @returns {Promise<Object>} Stop details
- */
-export const fetchStopByIdAPI = async (stopId) => {
-  await simulateDelay(300, 800);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch stop details");
-  }
-
-  const stop = allStops.find((s) => s.id === stopId);
-
-  if (!stop) {
-    throw new Error("Stop not found");
-  }
-
-  // Return stop with additional details
-  return {
-    ...stop,
-    detailedDescription: `${stop.description} This is a popular destination in Da Nang with ${stop.reviews} reviews.`,
-    amenities: ["WiFi", "Parking", "Restrooms"],
-    accessibility: "Wheelchair accessible",
-    bestTimeToVisit: "Morning hours (8-10 AM)",
-    lastUpdated: new Date().toISOString(),
-  };
-};
-
-/**
- * Search stops by query
- * @param {string} query - Search query
- * @returns {Promise<Array>} Matching stops
- */
-export const searchStopsAPI = async (query) => {
-  await simulateDelay(400, 900);
-
-  if (shouldFail()) {
-    throw new Error("Search failed. Please try again.");
-  }
-
-  const lowerQuery = query.toLowerCase();
-  return allStops.filter(
-    (stop) =>
-      stop.name?.toLowerCase().includes(lowerQuery) ||
-      stop.description?.toLowerCase().includes(lowerQuery) ||
-      stop.type?.toLowerCase().includes(lowerQuery)
+export const fetchItineraryStopsAPI = async (
+  itineraryId,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  // Stops are included when fetching itinerary
+  const response = await apiHelper.get(
+    `${apiUrls.itinerary.get(itineraryId)}?user_id=${userId}`
   );
+  return response?.itinerary?.stops || [];
 };
 
 /**
- * Get stops by type/category
- * @param {string} type - Stop type (Restaurant, Beach, Sightseeing, etc.)
- * @returns {Promise<Array>} Stops of the specified type
- */
-export const fetchStopsByTypeAPI = async (type) => {
-  await simulateDelay(300, 700);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch stops by type");
-  }
-
-  return allStops.filter(
-    (stop) => stop.type?.toLowerCase() === type.toLowerCase()
-  );
-};
-
-/**
- * Get nearby stops based on location
- * @param {number} lat - Latitude
- * @param {number} lng - Longitude
- * @param {number} radiusKm - Radius in kilometers (default: 5)
- * @returns {Promise<Array>} Nearby stops
- */
-export const fetchNearbyStopsAPI = async (lat, lng, radiusKm = 5) => {
-  await simulateDelay(500, 1000);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch nearby stops");
-  }
-
-  // Calculate distance using Haversine formula
-  const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLng = ((lng2 - lng1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  return allStops
-    .filter((stop) => {
-      if (!stop.location) return false;
-      const distance = calculateDistance(
-        lat,
-        lng,
-        stop.location.lat,
-        stop.location.lng
-      );
-      return distance <= radiusKm;
-    })
-    .map((stop) => ({
-      ...stop,
-      distance: calculateDistance(
-        lat,
-        lng,
-        stop.location.lat,
-        stop.location.lng
-      ).toFixed(2),
-    }))
-    .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-};
-
-/**
- * Get top-rated stops
- * @param {number} limit - Number of stops to return
- * @returns {Promise<Array>} Top-rated stops
- */
-export const fetchTopRatedStopsAPI = async (limit = 10) => {
-  await simulateDelay(400, 800);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch top-rated stops");
-  }
-
-  return [...allStops]
-    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    .slice(0, limit);
-};
-
-/**
- * Get top pick stops
- * @returns {Promise<Array>} Top pick stops
- */
-export const fetchTopPickStopsAPI = async () => {
-  await simulateDelay(300, 700);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch top picks");
-  }
-
-  return allStops.filter((stop) => stop.isTopPick);
-};
-
-/**
- * Create a new stop (for admin/user contributions)
+ * Add a stop to an itinerary
+ * @param {string} itineraryId - Itinerary ID
  * @param {Object} stopData - Stop data
+ * @param {string} userId - User ID
  * @returns {Promise<Object>} Created stop
  */
-export const createStopAPI = async (stopData) => {
-  await simulateDelay(800, 1500);
+export const addStopAPI = async (
+  itineraryId,
+  stopData,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const {
+    place_id,
+    day_index = 1,
+    order_index = 1,
+    arrival_time = null,
+    stay_minutes = 60,
+    notes = null,
+    tags = [],
+    snapshot = null,
+  } = stopData;
 
-  if (shouldFail()) {
-    throw new Error("Failed to create stop");
-  }
-
-  const newStop = {
-    id: `stop-${Date.now()}`,
-    ...stopData,
-    rating: 0,
-    reviews: 0,
-    createdAt: new Date().toISOString(),
-    status: "pending-review",
+  const requestBody = {
+    place_id,
+    day_index,
+    order_index,
+    arrival_time,
+    stay_minutes,
+    notes,
+    tags,
+    snapshot,
   };
 
-  return {
-    success: true,
-    stop: newStop,
-    message: "Stop created successfully and pending review",
-  };
+  console.log("📤 Adding stop to itinerary:", {
+    itineraryId,
+    requestBody,
+  });
+
+  const response = await apiHelper.post(
+    `${apiUrls.itinerary.addStop(itineraryId)}?user_id=${userId}`,
+    requestBody
+  );
+
+  return response;
 };
 
 /**
- * Update stop information
+ * Update a stop in an itinerary
+ * @param {string} itineraryId - Itinerary ID
  * @param {string} stopId - Stop ID
  * @param {Object} updates - Fields to update
+ * @param {string} userId - User ID
  * @returns {Promise<Object>} Update result
  */
-export const updateStopAPI = async (stopId, updates) => {
-  await simulateDelay(500, 1000);
+export const updateStopAPI = async (
+  itineraryId,
+  stopId,
+  updates,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const response = await apiHelper.put(
+    `${apiUrls.itinerary.updateStop(itineraryId, stopId)}?user_id=${userId}`,
+    updates
+  );
 
-  if (shouldFail()) {
-    throw new Error("Failed to update stop");
-  }
-
-  return {
-    success: true,
-    stopId,
-    updates,
-    updatedAt: new Date().toISOString(),
-    message: "Stop updated successfully",
-  };
+  return response;
 };
 
 /**
- * Delete a stop
+ * Delete a stop from an itinerary
+ * @param {string} itineraryId - Itinerary ID
  * @param {string} stopId - Stop ID
+ * @param {string} userId - User ID
  * @returns {Promise<Object>} Delete result
  */
-export const deleteStopAPI = async (stopId) => {
-  await simulateDelay(400, 800);
+export const deleteStopAPI = async (
+  itineraryId,
+  stopId,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const response = await apiHelper.delete(
+    `${apiUrls.itinerary.deleteStop(itineraryId, stopId)}?user_id=${userId}`
+  );
 
-  if (shouldFail()) {
-    throw new Error("Failed to delete stop");
-  }
+  return response;
+};
+
+/**
+ * Reorder stops within a day
+ * @param {string} itineraryId - Itinerary ID
+ * @param {number} dayIndex - Day index (1-indexed)
+ * @param {Array<string>} stopIds - Ordered array of stop IDs
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Updated stops
+ */
+export const reorderStopsAPI = async (
+  itineraryId,
+  dayIndex,
+  stopIds,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  // Update each stop's order_index
+  const updatePromises = stopIds.map((stopId, index) =>
+    updateStopAPI(
+      itineraryId,
+      stopId,
+      {
+        day_index: dayIndex,
+        order_index: index + 1, // 1-indexed
+      },
+      userId
+    )
+  );
+
+  await Promise.all(updatePromises);
+
+  return await fetchItineraryStopsAPI(itineraryId, userId);
+};
+
+/**
+ * Move a stop to a different day
+ * @param {string} itineraryId - Itinerary ID
+ * @param {string} stopId - Stop ID
+ * @param {number} fromDayIndex - Current day index
+ * @param {number} toDayIndex - Target day index
+ * @param {number} toOrderIndex - Target order index
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Update result
+ */
+export const moveStopToDayAPI = async (
+  itineraryId,
+  stopId,
+  fromDayIndex,
+  toDayIndex,
+  toOrderIndex = 1,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const response = await updateStopAPI(
+    itineraryId,
+    stopId,
+    {
+      day_index: toDayIndex,
+      order_index: toOrderIndex,
+    },
+    userId
+  );
+
+  return response;
+};
+
+/**
+ * Bulk add stops to an itinerary
+ * @param {string} itineraryId - Itinerary ID
+ * @param {Array<Object>} stops - Array of stop data
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Created stops
+ */
+export const bulkAddStopsAPI = async (
+  itineraryId,
+  stops,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const createPromises = stops.map((stopData) =>
+    addStopAPI(itineraryId, stopData, userId)
+  );
+
+  const results = await Promise.all(createPromises);
+  return results;
+};
+
+/**
+ * Get stops for a specific day
+ * @param {string} itineraryId - Itinerary ID
+ * @param {number} dayIndex - Day index (1-indexed)
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Stops for the day
+ */
+export const fetchDayStopsAPI = async (
+  itineraryId,
+  dayIndex,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const allStops = await fetchItineraryStopsAPI(itineraryId, userId);
+  return allStops
+    .filter((stop) => stop.day_index === dayIndex)
+    .sort((a, b) => a.order_index - b.order_index);
+};
+
+/**
+ * Update stop timing
+ * @param {string} itineraryId - Itinerary ID
+ * @param {string} stopId - Stop ID
+ * @param {string} arrivalTime - New arrival time (ISO string)
+ * @param {number} stayMinutes - Stay duration in minutes
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Update result
+ */
+export const updateStopTimingAPI = async (
+  itineraryId,
+  stopId,
+  arrivalTime,
+  stayMinutes,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  return await updateStopAPI(
+    itineraryId,
+    stopId,
+    {
+      arrival_time: arrivalTime,
+      stay_minutes: stayMinutes,
+    },
+    userId
+  );
+};
+
+/**
+ * Add notes to a stop
+ * @param {string} itineraryId - Itinerary ID
+ * @param {string} stopId - Stop ID
+ * @param {string} notes - Notes to add
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Update result
+ */
+export const addStopNotesAPI = async (
+  itineraryId,
+  stopId,
+  notes,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  return await updateStopAPI(
+    itineraryId,
+    stopId,
+    {
+      notes,
+    },
+    userId
+  );
+};
+
+/**
+ * Add tags to a stop
+ * @param {string} itineraryId - Itinerary ID
+ * @param {string} stopId - Stop ID
+ * @param {Array<string>} tags - Tags to add
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Update result
+ */
+export const addStopTagsAPI = async (
+  itineraryId,
+  stopId,
+  tags,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  return await updateStopAPI(
+    itineraryId,
+    stopId,
+    {
+      tags,
+    },
+    userId
+  );
+};
+
+/**
+ * Get statistics for stops in an itinerary
+ * @param {string} itineraryId - Itinerary ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Stop statistics
+ */
+export const getStopStatsAPI = async (
+  itineraryId,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const stops = await fetchItineraryStopsAPI(itineraryId, userId);
+
+  const totalStops = stops.length;
+  const totalDuration = stops.reduce(
+    (sum, stop) => sum + (stop.stay_minutes || 0),
+    0
+  );
+
+  // Group by category
+  const byCategory = stops.reduce((acc, stop) => {
+    const category = stop.snapshot?.category || "Other";
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Group by day
+  const byDay = stops.reduce((acc, stop) => {
+    const day = stop.day_index;
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(stop);
+    return acc;
+  }, {});
 
   return {
-    success: true,
-    stopId,
-    deletedAt: new Date().toISOString(),
-    message: "Stop deleted successfully",
+    totalStops,
+    totalDuration,
+    totalDurationFormatted: `${Math.floor(totalDuration / 60)}h ${
+      totalDuration % 60
+    }m`,
+    byCategory,
+    byDay,
+    daysWithStops: Object.keys(byDay).length,
   };
 };
 
-/**
- * Get stop reviews
- * @param {string} stopId - Stop ID
- * @returns {Promise<Array>} Reviews for the stop
- */
-export const fetchStopReviewsAPI = async (stopId) => {
-  await simulateDelay(400, 900);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch reviews");
-  }
-
-  // Return mock reviews
-  return [
-    {
-      id: "review-1",
-      userId: "user-123",
-      userName: "John Doe",
-      rating: 5,
-      comment: "Amazing place! Highly recommended.",
-      createdAt: "2024-10-15T10:30:00Z",
-      helpful: 15,
-    },
-    {
-      id: "review-2",
-      userId: "user-456",
-      userName: "Jane Smith",
-      rating: 4,
-      comment: "Great experience, but it was quite crowded.",
-      createdAt: "2024-10-14T14:20:00Z",
-      helpful: 8,
-    },
-  ];
-};
-
-/**
- * Add review to a stop
- * @param {string} stopId - Stop ID
- * @param {Object} reviewData - Review data
- * @returns {Promise<Object>} Created review
- */
-export const addStopReviewAPI = async (stopId, reviewData) => {
-  await simulateDelay(600, 1200);
-
-  if (shouldFail()) {
-    throw new Error("Failed to submit review");
-  }
-
-  const newReview = {
-    id: `review-${Date.now()}`,
-    stopId,
-    ...reviewData,
-    createdAt: new Date().toISOString(),
-    helpful: 0,
-  };
-
-  return {
-    success: true,
-    review: newReview,
-    message: "Review submitted successfully",
-  };
-};
-
-/**
- * Get stop photos
- * @param {string} stopId - Stop ID
- * @returns {Promise<Array>} Photos for the stop
- */
-export const fetchStopPhotosAPI = async (stopId) => {
-  await simulateDelay(500, 1000);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch photos");
-  }
-
-  // Return mock photo URLs
-  return [
-    {
-      id: "photo-1",
-      url: "https://example.com/photo1.jpg",
-      uploadedBy: "user-123",
-      uploadedAt: "2024-10-10T12:00:00Z",
-      likes: 42,
-    },
-    {
-      id: "photo-2",
-      url: "https://example.com/photo2.jpg",
-      uploadedBy: "user-456",
-      uploadedAt: "2024-10-11T15:30:00Z",
-      likes: 28,
-    },
-  ];
-};
-
-/**
- * Get currently open stops
- * @returns {Promise<Array>} Open stops
- */
-export const fetchOpenStopsAPI = async () => {
-  await simulateDelay(300, 600);
-
-  if (shouldFail()) {
-    throw new Error("Failed to fetch open stops");
-  }
-
-  return allStops.filter((stop) => stop.openNow);
+// Export all functions
+export default {
+  fetchItineraryStopsAPI,
+  addStopAPI,
+  updateStopAPI,
+  deleteStopAPI,
+  reorderStopsAPI,
+  moveStopToDayAPI,
+  bulkAddStopsAPI,
+  fetchDayStopsAPI,
+  updateStopTimingAPI,
+  addStopNotesAPI,
+  addStopTagsAPI,
+  getStopStatsAPI,
 };

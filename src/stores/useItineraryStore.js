@@ -1,5 +1,17 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import {
+  fetchUserItinerariesAPI,
+  fetchItineraryByIdAPI,
+  createItineraryAPI,
+  deleteItineraryAPI,
+} from "../apis/itineraryService";
+import {
+  addStopAPI,
+  updateStopAPI,
+  deleteStopAPI,
+  fetchItineraryStopsAPI,
+} from "../apis/stopService";
 
 /**
  * Zustand Store for Itinerary Management
@@ -523,6 +535,180 @@ const useItineraryStore = create(
             estimatedDurationMin: 0,
           },
         });
+      },
+
+      // ========== Backend API Integration ==========
+
+      /**
+       * Fetch all itineraries from backend
+       * @param {string} userId - User ID
+       */
+      fetchItineraries: async (userId) => {
+        try {
+          set({ isLoading: true, error: null });
+          const itineraries = await fetchUserItinerariesAPI(userId);
+
+          // If there are itineraries, fetch the first one with full details
+          if (itineraries && itineraries.length > 0) {
+            const firstItinerary = await fetchItineraryByIdAPI(
+              itineraries[0].id,
+              userId
+            );
+
+            // Transform backend data to frontend format
+            if (firstItinerary?.days) {
+              set({
+                itineraryItems: firstItinerary.days,
+                isLoading: false,
+                error: null,
+              });
+            }
+          } else {
+            set({ itineraryItems: [], isLoading: false });
+          }
+        } catch (error) {
+          console.error("Error fetching itineraries:", error);
+          set({ error: error.message, isLoading: false });
+        }
+      },
+
+      /**
+       * Create a new itinerary in backend
+       * @param {Object} itineraryData - Itinerary data
+       * @param {string} userId - User ID
+       * @returns {Promise<string>} Created itinerary ID
+       */
+      createNewItinerary: async (itineraryData, userId) => {
+        try {
+          set({ isLoading: true });
+          const response = await createItineraryAPI(itineraryData, userId);
+          const itineraryId = response?.itinerary?.id;
+
+          if (itineraryId) {
+            // Refresh itineraries list
+            await get().fetchItineraries(userId);
+          }
+
+          set({ isLoading: false });
+          return itineraryId;
+        } catch (error) {
+          console.error("Error creating itinerary:", error);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+
+      /**
+       * Delete an itinerary from backend
+       * @param {string} itineraryId - Itinerary ID
+       * @param {string} userId - User ID
+       */
+      deleteItinerary: async (itineraryId, userId) => {
+        try {
+          await deleteItineraryAPI(itineraryId, userId);
+          // Refresh itineraries list
+          await get().fetchItineraries(userId);
+        } catch (error) {
+          console.error("Error deleting itinerary:", error);
+          set({ error: error.message });
+        }
+      },
+
+      /**
+       * Add a stop to backend and update local state
+       * @param {string} itineraryId - Itinerary ID
+       * @param {number} dayIndex - Day index (0-based for frontend)
+       * @param {Object} stopData - Stop data
+       * @param {string} userId - User ID
+       */
+      addStopToBackend: async (itineraryId, dayIndex, stopData, userId) => {
+        try {
+          // Convert frontend format to backend format
+          const backendStopData = {
+            place_id: stopData.place_id,
+            day_index: dayIndex + 1, // Backend uses 1-indexed
+            order_index:
+              (get().itineraryItems[dayIndex]?.stops?.length || 0) + 1,
+            arrival_time: stopData.arrival_time,
+            stay_minutes: stopData.stay_minutes || 60,
+            notes: stopData.notes || "",
+            tags: stopData.tags || [],
+            snapshot: stopData.snapshot,
+          };
+
+          const response = await addStopAPI(
+            itineraryId,
+            backendStopData,
+            userId
+          );
+
+          if (response?.stop) {
+            // Update local state
+            const items = [...get().itineraryItems];
+            if (items[dayIndex]) {
+              items[dayIndex] = {
+                ...items[dayIndex],
+                stops: [...(items[dayIndex].stops || []), response.stop],
+              };
+              set({ itineraryItems: items });
+
+              // Clear route cache
+              const routeCache = { ...get().routeCache };
+              delete routeCache[dayIndex];
+              set({ routeCache });
+            }
+          }
+
+          return response;
+        } catch (error) {
+          console.error("Error adding stop:", error);
+          throw error;
+        }
+      },
+
+      /**
+       * Update a stop in backend and local state
+       * @param {string} itineraryId - Itinerary ID
+       * @param {number} dayIndex - Day index
+       * @param {string} stopId - Stop ID
+       * @param {Object} updates - Updates to apply
+       * @param {string} userId - User ID
+       */
+      updateStopBackend: async (
+        itineraryId,
+        dayIndex,
+        stopId,
+        updates,
+        userId
+      ) => {
+        try {
+          await updateStopAPI(itineraryId, stopId, updates, userId);
+
+          // Update local state
+          get().updateStop(dayIndex, stopId, updates);
+        } catch (error) {
+          console.error("Error updating stop:", error);
+          throw error;
+        }
+      },
+
+      /**
+       * Delete a stop from backend and local state
+       * @param {string} itineraryId - Itinerary ID
+       * @param {number} dayIndex - Day index
+       * @param {string} stopId - Stop ID
+       * @param {string} userId - User ID
+       */
+      deleteStopBackend: async (itineraryId, dayIndex, stopId, userId) => {
+        try {
+          await deleteStopAPI(itineraryId, stopId, userId);
+
+          // Update local state
+          get().removeStop(dayIndex, stopId);
+        } catch (error) {
+          console.error("Error deleting stop:", error);
+          throw error;
+        }
       },
     }),
     { name: "ItineraryStore" }

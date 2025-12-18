@@ -3,8 +3,11 @@ import AppLayout from "../components/layout/AppLayout/AppLayout";
 import ItineraryList from "../components/Itinerary/ItineraryList";
 import ItineraryMap from "../components/Itinerary/ItineraryMap";
 import ContextualToolbar from "../components/ContextualToolbar/ContextualToolbar";
-import { tripMetadata } from "../data/mockData";
-import { fetchItineraryFromBackend } from "../apis/itineraryService";
+import {
+  fetchUserItinerariesAPI,
+  fetchItineraryByIdAPI,
+} from "../apis/itineraryService";
+import { HARDCODED_TEST_USER } from "../utils/constants";
 import useItineraryStore from "../stores/useItineraryStore";
 import {
   Box,
@@ -31,6 +34,8 @@ import {
 
 const AiItinerary = () => {
   const [activeTab, setActiveTab] = useState("itinerary"); // map, itinerary, bookings
+  const [itineraryMetadata, setItineraryMetadata] = useState(null);
+  const [currentItineraryId, setCurrentItineraryId] = useState(null); // Store itinerary ID for direct stop operations
 
   // Zustand store - unified state management
   const {
@@ -49,8 +54,52 @@ const AiItinerary = () => {
     const loadItinerary = async () => {
       setLoading(true);
       try {
-        const data = await fetchItineraryFromBackend();
-        setItinerary(data);
+        // Fetch all itineraries for the user
+        const itineraries = await fetchUserItinerariesAPI(
+          HARDCODED_TEST_USER.userId
+        );
+
+        if (itineraries && itineraries.length > 0) {
+          // Store the itinerary ID for direct stop operations
+          const itineraryId = itineraries[0].id;
+          setCurrentItineraryId(itineraryId);
+
+          // Get the first (most recent) itinerary with full details
+          const firstItinerary = await fetchItineraryByIdAPI(
+            itineraryId,
+            HARDCODED_TEST_USER.userId
+          );
+
+          // Set metadata from backend
+          if (firstItinerary) {
+            setItineraryMetadata({
+              id: itineraryId, // Include ID in metadata
+              title: firstItinerary.title,
+              startDate: firstItinerary.start_date,
+              endDate: firstItinerary.end_date,
+              totalDays: firstItinerary.total_days,
+              dateRange: formatDateRange(
+                firstItinerary.start_date,
+                firstItinerary.end_date
+              ),
+              duration: `${firstItinerary.total_days} ${
+                firstItinerary.total_days === 1 ? "day" : "days"
+              }`,
+            });
+
+            // Set itinerary items (transformed days array)
+            setItinerary(firstItinerary.days || []);
+          }
+        } else {
+          // No itineraries found
+          setCurrentItineraryId(null);
+          setItinerary([]);
+          setItineraryMetadata({
+            title: "No Itinerary",
+            dateRange: "",
+            duration: "0 days",
+          });
+        }
       } catch (err) {
         setError(err.message);
       }
@@ -58,6 +107,90 @@ const AiItinerary = () => {
 
     loadItinerary();
   }, [setItinerary, setLoading, setError]);
+
+  // Helper function to format date range
+  const formatDateRange = (startDate, endDate) => {
+    if (!startDate || !endDate) return "";
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    return `${months[start.getMonth()]} ${start.getDate()} - ${
+      months[end.getMonth()]
+    } ${end.getDate()}`;
+  };
+
+  /**
+   * Helper function to add a stop directly to itinerary_stops table
+   * This can be called from child components (ItineraryList, MapPanel, etc.)
+   *
+   * @example
+   * // Add a destination to Day 1
+   * await handleAddStop(0, {
+   *   place_id: "marble-mountains",
+   *   arrival_time: "09:00",
+   *   stay_minutes: 90,
+   *   notes: "Visit early morning",
+   *   tags: ["sightseeing", "cultural"],
+   *   snapshot: { name: "Marble Mountains", category: "Attraction" }
+   * });
+   */
+  const handleAddStop = async (dayIndex, stopData) => {
+    if (!currentItineraryId) {
+      console.error("No itinerary ID available");
+      return;
+    }
+
+    try {
+      const { addStopAPI } = await import("../apis/stopService");
+
+      // Prepare stop data with day_index (backend uses 1-indexed)
+      const backendStopData = {
+        ...stopData,
+        day_index: dayIndex + 1, // Convert 0-based to 1-based
+      };
+
+      // Add stop directly to itinerary_stops table
+      const response = await addStopAPI(
+        currentItineraryId,
+        backendStopData,
+        HARDCODED_TEST_USER.userId
+      );
+
+      console.log("✅ Stop added successfully:", response);
+
+      // Refresh itinerary to show the new stop
+      const updatedItinerary = await fetchItineraryByIdAPI(
+        currentItineraryId,
+        HARDCODED_TEST_USER.userId
+      );
+
+      if (updatedItinerary?.days) {
+        setItinerary(updatedItinerary.days);
+      }
+
+      return response;
+    } catch (error) {
+      console.error("❌ Error adding stop:", error);
+      setError(error.message);
+      throw error;
+    }
+  };
 
   const currentItinerary = itineraryItems[0]; // Displaying Day 1 for now
 
@@ -142,10 +275,12 @@ const AiItinerary = () => {
               <Flex justify="space-between" align="center">
                 <Box>
                   <Text size="xl" fw={700}>
-                    {tripMetadata.title}
+                    {itineraryMetadata?.title || "Loading..."}
                   </Text>
                   <Text size="xs" c="dimmed">
-                    {tripMetadata.dateRange} • {tripMetadata.duration}
+                    {itineraryMetadata?.dateRange || ""}{" "}
+                    {itineraryMetadata?.dateRange && "•"}{" "}
+                    {itineraryMetadata?.duration || ""}
                   </Text>
                 </Box>
                 <Group gap="xs">

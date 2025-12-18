@@ -4,7 +4,7 @@
  */
 
 import apiHelper from "../utils/apiHelper";
-import { apiUrls } from "../utils/constants";
+import { apiUrls, HARDCODED_TEST_USER } from "../utils/constants";
 import {
   transformBackendToFrontend,
   transformStopToBackend,
@@ -17,7 +17,9 @@ import {
  * @param {string} userId - User ID
  * @returns {Promise<Array>} List of itineraries
  */
-export const fetchUserItinerariesAPI = async (userId) => {
+export const fetchUserItinerariesAPI = async (
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const response = await apiHelper.get(
     `${apiUrls.itinerary.list}?user_id=${userId}`
   );
@@ -30,7 +32,10 @@ export const fetchUserItinerariesAPI = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Itinerary with stops in frontend format
  */
-export const fetchItineraryByIdAPI = async (itineraryId, userId) => {
+export const fetchItineraryByIdAPI = async (
+  itineraryId,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const response = await apiHelper.get(
     `${apiUrls.itinerary.get(itineraryId)}?user_id=${userId}`
   );
@@ -76,10 +81,13 @@ export const fetchItineraryFromBackend = async (userId = "anonymous") => {
 /**
  * Create a new itinerary
  * @param {Object} itineraryData - Itinerary data
- * @param {string} userId - User ID
+ * @param {string} userId - User ID (defaults to test user)
  * @returns {Promise<Object>} Created itinerary
  */
-export const createItineraryAPI = async (itineraryData, userId) => {
+export const createItineraryAPI = async (
+  itineraryData,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const {
     title = "My Trip to Da Nang",
     startDate,
@@ -114,7 +122,11 @@ export const createItineraryAPI = async (itineraryData, userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Update result
  */
-export const updateItineraryAPI = async (itineraryId, updates, userId) => {
+export const updateItineraryAPI = async (
+  itineraryId,
+  updates,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const response = await apiHelper.put(
     `${apiUrls.itinerary.update(itineraryId)}?user_id=${userId}`,
     updates
@@ -129,7 +141,10 @@ export const updateItineraryAPI = async (itineraryId, updates, userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Delete result
  */
-export const deleteItineraryAPI = async (itineraryId, userId) => {
+export const deleteItineraryAPI = async (
+  itineraryId,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const response = await apiHelper.delete(
     `${apiUrls.itinerary.delete(itineraryId)}?user_id=${userId}`
   );
@@ -144,7 +159,11 @@ export const deleteItineraryAPI = async (itineraryId, userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Created stop
  */
-export const addStopAPI = async (itineraryId, stopData, userId) => {
+export const addStopAPI = async (
+  itineraryId,
+  stopData,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const { destination, dayIndex, orderIndex, time, stayMinutes, notes, tags } =
     stopData;
 
@@ -177,7 +196,12 @@ export const addStopAPI = async (itineraryId, stopData, userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Update result
  */
-export const updateStopAPI = async (itineraryId, stopId, updates, userId) => {
+export const updateStopAPI = async (
+  itineraryId,
+  stopId,
+  updates,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const response = await apiHelper.put(
     `${apiUrls.itinerary.updateStop(itineraryId, stopId)}?user_id=${userId}`,
     updates
@@ -193,7 +217,11 @@ export const updateStopAPI = async (itineraryId, stopId, updates, userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<Object>} Delete result
  */
-export const deleteStopAPI = async (itineraryId, stopId, userId) => {
+export const deleteStopAPI = async (
+  itineraryId,
+  stopId,
+  userId = HARDCODED_TEST_USER.userId
+) => {
   const response = await apiHelper.delete(
     `${apiUrls.itinerary.deleteStop(itineraryId, stopId)}?user_id=${userId}`
   );

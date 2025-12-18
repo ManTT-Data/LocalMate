@@ -4,11 +4,13 @@ import { IconBrandGoogle, IconAlertCircle } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { loginWithGoogleAPI } from "../apis/authService";
 import { googlClientId } from "../utils/constants";
+import useUserStore from "../stores/useUserStore";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const setUser = useUserStore((state) => state.setUser);
 
   const handleGoogleLogin = () => {
     setLoading(true);
@@ -25,6 +27,15 @@ const LoginPage = () => {
                 response.access_token
               );
               console.log("Login successful:", loginResponse);
+
+              // Save user data to Zustand store
+              setUser({
+                id: loginResponse.user_id,
+                email: loginResponse.email,
+                name: loginResponse.full_name,
+                avatar: loginResponse.avatar_url,
+              });
+
               navigate("/");
             } else {
               setError("Failed to get access token from Google");

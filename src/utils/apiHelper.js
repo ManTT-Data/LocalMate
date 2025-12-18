@@ -29,15 +29,11 @@ const apiHelper = {
   },
 
   post: async (url, data = {}, config = {}) => {
-    try {
-      const response = await api.post(url, data, {
-        ...config,
-        headers: { "Content-Type": "application/json", ...config.headers },
-      });
-      return response.data;
-    } catch (error) {
-      return formatErrorResponse(error);
-    }
+    const response = await api.post(url, data, {
+      ...config,
+      headers: { "Content-Type": "application/json", ...config.headers },
+    });
+    return response.data;
   },
 
   postFormData: async (url, formData, config = {}) => {

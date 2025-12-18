@@ -2,19 +2,6 @@
 
 import { href } from "react-router-dom";
 
-export const userProfile = {
-  name: "Traveler",
-  avatar:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuC4AbK2oqcAKCpO22pKEVLJAJX-ykLdvx4F_Fbd1guobduyYlqflxJ9Xg_YxZamXw1Yf5D8E3dV1yPxtTkh3dD7tbnuQDS4JSLpyH1Qhfz-HIIc8VGvr_cdLNPSHtHzHwwbqYqpbbvwQoATOps1aS_wd0ZnutjXbCK1Q4Z6Jrm2puLxFA_F3BG4I2JkD5NGcHaaevRGRSHwwo2zSEr-MqkyOgAHh78eyJtLXposdyL9qXuZ2N2UXxy7HVzDENkfqqRH0MBK_zHkKUeS",
-  location: { lat: 16.0544, lng: 108.2022 },
-};
-
-export const aiAgent = {
-  name: "Super Agent",
-  avatar:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBPT4cRaJeVkKTOOImkcsyQXerboBrqLHhuLLV1t-i9YjdYe2FxKPsUxgthNKtXtbmg6q-c5tIcmJc-AS_8QDaOa9syh65MFnSf8WOoCtGXRpDBlqts1VUW5XcPN4kgUwAFkJ6yekABQ8o78dntl19IDXJ_8n8lZ0Sm-ONw8dKxG5uOqjDZpJ7QvRXm4IzmVM70xbc66qDQgxHw-cCxV0suqbDqDBKtgMCfB43hPI61zl2UyFaJTNuJtwcb7snC7e2zRmQisB9d8FRk",
-};
-
 export const chatMessages = [
   {
     id: 1,
@@ -24,7 +11,6 @@ export const chatMessages = [
   {
     id: 2,
     type: "ai",
-    sender: aiAgent,
     content:
       "Xin chào! Welcome to Da Nang! 🌴 I can help you plan your trip. Are you looking for relaxation, cultural sites, or a food adventure today?",
     timestamp: "9:41 AM",
@@ -40,7 +26,6 @@ export const chatMessages = [
   {
     id: 4,
     type: "ai",
-    sender: aiAgent,
     content:
       "I've added **Marble Mountains** to your itinerary for this morning. It's best to visit early to avoid the heat.\n\nI also found a highly-rated **Mì Quảng** place nearby for lunch. Check the updated itinerary on the right!",
     timestamp: "9:42 AM",
@@ -198,6 +183,23 @@ export const grabBooking = {
   eta: "~ 4 min away",
   carImage:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuArh9M0CbTeNgekUl-epGu9t3dIh2yKDlknPlDSb-U3hd8aAGBa1kEEVNKHmyaXDPtPqexVTB6F217yQj-KZEzcp4nMWS9DpBiYPXLAthiEST93RqbkRDgJk1WyJgZVvPx2yRPiFjzOY_TBlM95dobRkfe029FsNPGaSerUAeHBXfVLwzALPRmCmX2DC7vg3BfRseE3kBL5dOkcfkSg6kHiQSXaJPh6q-sYGJzjvoEUwhohg7jUcr0CXFxMkHWCVG_xmIGKcuvq0E7t",
+  bookingUrl: "https://www.grab.com/vn/transport/",
+};
+
+export const hotelBooking = {
+  hotelName: "Hyatt Regency Danang Resort & Spa",
+  hotelDescription: "5-Star Beach Resort • Spa • Pool",
+  price: "2.500k₫",
+  pricePerNight: "2.500k₫/night",
+  nights: "1 night",
+  rating: 4.8,
+  reviews: 3420,
+  roomType: "Deluxe Ocean View",
+  amenities: ["Free WiFi", "Breakfast Included", "Pool Access"],
+  hotelImage:
+    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
+  bookingUrl:
+    "https://www.booking.com/searchresults.html?ss=Da+Nang%2C+Vietnam&checkin=2024-12-20&checkout=2024-12-21",
 };
 
 export const suggestionChips = [
@@ -452,5 +454,34 @@ export const pendingBookings = [
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuAuajKaysFsmhJPOzOEjqvmfqsx1AoKro4zAldb3m5FqXTW1tPjZMjHRaTGK4tj06JrqVgK1DbrQvJwTQSRuesuytCrB1Ed1PWqO05X5u8JgHG_chdTmnxejPsUfkYv2zcHTSkJv9F3aAzLIWp1Y4LOEhq0jBWiZDvCPF7iSlZ2v-Iy30tvPS8xbvm2vzT4xkIj7l3CmNNoxgLoXGFGfUSw2fzx5rJxUHW-dvDJsjJ4MU-UithTvjB0lGsV_Dnv9hENY_CaaxldwpNI",
     createdAt: "2024-10-23T15:10:00Z",
+  },
+  {
+    id: "BK1734354000007",
+    userId: "user-001",
+    stopId: "hotel-stay",
+    bookingType: "accommodation",
+    status: "pending",
+    price: 2500000, // 2,500,000 VND
+    priceDisplay: "2.500.000₫",
+    serviceName: "Hyatt Regency Danang Resort & Spa",
+    category: "Accommodation",
+    categoryBadge: "Fulfilled by Booking.com",
+    scheduledTime: "Oct 24, Check-in 2:00 PM",
+    icon: "hotel",
+    iconBg: "#003580",
+    iconColor: "#003580",
+    bookingDetails: {
+      roomType: "Deluxe Ocean View",
+      checkIn: "2024-10-24",
+      checkOut: "2024-10-25",
+      guests: "2 Adults",
+      nights: 1,
+      amenities: ["Free WiFi", "Breakfast Included", "Pool Access"],
+      rating: 4.8,
+      reviews: 3420,
+    },
+    image:
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
+    createdAt: "2024-10-23T14:00:00Z",
   },
 ];

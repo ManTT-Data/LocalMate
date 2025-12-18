@@ -7,6 +7,24 @@ import apiHelper from "../utils/apiHelper";
 import { apiUrls } from "../utils/constants";
 
 /**
+ * Upload image to Supabase Storage
+ * @param {File} imageFile - Image file to upload
+ * @param {string} [userId="anonymous"] - User ID for organizing uploads
+ * @returns {Promise<Object>} Upload response with URL, path, size, content_type
+ *
+ * @example
+ * const result = await uploadImage(file, "user_123");
+ * console.log(result.url); // Supabase public URL
+ */
+export const uploadImage = async (imageFile, userId = "anonymous") => {
+  const formData = new FormData();
+  formData.append("file", imageFile);
+  formData.append("user_id", userId);
+
+  return await apiHelper.postFormData(apiUrls.upload.image, formData);
+};
+
+/**
  * Send a message to the AI chat agent
  * @param {Object} messageData - Chat message data
  * @param {string} messageData.message - User's message in natural language
@@ -122,6 +140,7 @@ export const findNearbyPlaces = async (lat, lng, options = {}) => {
 };
 
 export default {
+  uploadImage,
   sendMessage,
   clearConversation,
   getChatHistory,

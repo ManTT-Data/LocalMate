@@ -1,3 +1,13 @@
+// Hardcoded test user for development/testing
+export const HARDCODED_TEST_USER = {
+  userId: "00000000-0000-0000-0000-000000000001", // Valid UUID format for test user
+  email: "testuser@localmate.com",
+  username: "testuser",
+  fullName: "Test User",
+  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=TestUser",
+  sessionId: "test-session-default",
+};
+
 export const googlClientId =
   "261949591384-cvb3pf4lveqdkorql609mf95gia0pn0r.apps.googleusercontent.com";
 
@@ -10,6 +20,11 @@ export const apiUrls = {
   auth: {
     login: `${API_VERSION}/auth/login`,
     logout: `${API_VERSION}/auth/logout`,
+  },
+
+  // Upload API
+  upload: {
+    image: `${API_VERSION}/upload/image`,
   },
 
   // Chat API
@@ -51,6 +66,12 @@ export const apiUrls = {
       `${API_VERSION}/itineraries/${id}/stops/${stopId}`,
     deleteStop: (id, stopId) =>
       `${API_VERSION}/itineraries/${id}/stops/${stopId}`,
+  },
+
+  // User Profile API
+  users: {
+    me: `${API_VERSION}/users/me`,
+    byId: (userId) => `${API_VERSION}/users/${userId}`,
   },
 
   // Utility Endpoints

@@ -69,7 +69,21 @@ const BookingPage = () => {
   // Handle booking actions
   const handleEdit = (booking) => {
     console.log("Edit booking:", booking);
-    // TODO: Implement edit modal
+
+    // Redirect to external booking sites based on booking type
+    if (booking.bookingType === "transportation") {
+      // Open Grab booking page
+      window.open("https://www.grab.com/vn/transport/", "_blank");
+    } else if (booking.bookingType === "accommodation") {
+      // Open Booking.com with Da Nang search
+      window.open(
+        "https://www.booking.com/searchresults.html?ss=Da+Nang%2C+Vietnam&checkin=2024-12-20&checkout=2024-12-21",
+        "_blank"
+      );
+    } else {
+      // For other types, keep the default behavior
+      // TODO: Implement edit modal for tickets and reservations
+    }
   };
 
   const handleRemove = (booking) => {
