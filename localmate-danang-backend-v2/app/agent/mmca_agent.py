@@ -20,42 +20,15 @@ from app.mcp.tools import mcp_tools
 from app.shared.integrations.gemini_client import GeminiClient
 from app.shared.integrations.megallm_client import MegaLLMClient
 from app.shared.logger import agent_logger, AgentWorkflow, WorkflowStep
-
-
-# Default coordinates for Da Nang (if no location specified)
-DANANG_CENTER = (16.0544, 108.2022)
-
-# System prompt for the agent - balanced for all 3 tools
-SYSTEM_PROMPT = """Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Bạn có 3 công cụ tìm kiếm:
-
-**1. retrieve_context_text** - Tìm kiếm văn bản thông minh
-   - Khi nào: Hỏi về menu, review, mô tả, đặc điểm, phong cách
-   - Ví dụ: "Phở ngon giá rẻ", "Quán cafe view đẹp", "Nơi lãng mạn hẹn hò"
-   - Đặc biệt: Tự động phát hiện category (cafe, pho, seafood...) và boost kết quả
-
-**2. retrieve_similar_visuals** - Tìm theo hình ảnh
-   - Khi nào: Người dùng gửi ảnh hoặc mô tả về không gian, decor
-   - Scene filter: food, interior, exterior, view
-   - Ví dụ: "Quán có không gian giống ảnh này"
-
-**3. find_nearby_places** - Tìm theo vị trí
-   - Khi nào: Hỏi về khoảng cách, "gần đây", "gần X", "quanh Y"
-   - Ví dụ: "Quán cafe gần Cầu Rồng", "Nhà hàng gần bãi biển Mỹ Khê"
-   - Đặc biệt: Có thể lấy chi tiết đầy đủ với photos, reviews
-
-**4. search_social_media** - Tìm kiếm mạng xã hội và tin tức
-   - Khi nào: Hỏi về "review", "tin hot", "trend", "tiktok", "facebook", "tin mới"
-   - Ví dụ: "Review quán ăn ngon Đà Nẵng trên TikTok", "Tin hot tuần qua"
-   - Tham số: query, freshness ("pw": tuần, "pm": tháng), platforms (["tiktok", "facebook", "reddit"])
-
-**Quy tắc quan trọng:**
-1. Phân tích intent để chọn ĐÚNG tool (không chỉ dùng 1 tool)
-2. Với câu hỏi tổng quát ("quán cafe ngon") → dùng retrieve_context_text
-3. Với câu hỏi vị trí ("gần X", "quanh Y") → dùng find_nearby_places
-4. Với câu hỏi trend/review từ MXH -> dùng search_social_media
-5. Với ảnh → dùng retrieve_similar_visuals
-6. Trả lời tiếng Việt, thân thiện, cung cấp thông tin cụ thể (tên, rating, khoảng cách)
-"""
+from app.shared.constants import (
+    DANANG_CENTER,
+    SYSTEM_PROMPT,
+    SYNTHESIS_PROMPT_TEMPLATE,
+    KNOWN_LOCATIONS,
+    CATEGORY_KEYWORDS,
+    LOCATION_KEYWORDS,
+    SOCIAL_KEYWORDS,
+)
 
 
 
@@ -245,16 +218,14 @@ class MMCAAgent:
         if image_url:
             intents.append("visual_search")
         
-        location_keywords = ["gần", "cách", "nearby", "gần đây", "quanh", "xung quanh"]
-        if any(kw in message.lower() for kw in location_keywords):
+        if any(kw in message.lower() for kw in LOCATION_KEYWORDS):
             intents.append("location_search")
         
         if not intents:
             intents.append("text_search")
         
         # Social intent detection
-        social_keywords = ["review", "tin hot", "trend", "tin mới", "tiktok", "facebook", "reddit", "youtube", "mạng xã hội"]
-        if any(kw in message.lower() for kw in social_keywords):
+        if any(kw in message.lower() for kw in SOCIAL_KEYWORDS):
             intents.append("social_search")
             
         return " + ".join(intents)
@@ -289,10 +260,9 @@ class MMCAAgent:
             ))
 
         # Check for social media intent FIRST
-        social_keywords = ["review", "tin hot", "trend", "tin mới", "tiktok", "facebook", "reddit", "youtube", "mạng xã hội"]
-        if any(kw in message.lower() for kw in social_keywords):
+        if any(kw in message.lower() for kw in SOCIAL_KEYWORDS):
             # Determine freshness
-            freshness = "pw" # Default past week
+            freshness = "pw"  # Default past week
             if "tháng" in message.lower() or "month" in message.lower():
                 freshness = "pm"
             
@@ -313,8 +283,7 @@ class MMCAAgent:
             ))
 
         # Analyze message for location/proximity queries
-        location_keywords = ["gần", "cách", "nearby", "gần đây", "quanh", "xung quanh"]
-        if any(kw in message.lower() for kw in location_keywords):
+        if any(kw in message.lower() for kw in LOCATION_KEYWORDS):
             # Extract location name from message
             location = self._extract_location(message)
             category = self._extract_category(message)
@@ -485,27 +454,8 @@ Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó
 
     def _extract_location(self, message: str) -> str | None:
         """Extract location name from message using pattern matching."""
-        known_locations = {
-            "mỹ khê": "My Khe Beach",
-            "my khe": "My Khe Beach",
-            "bãi biển mỹ khê": "My Khe Beach",
-            "cầu rồng": "Dragon Bridge",
-            "cau rong": "Dragon Bridge",
-            "dragon bridge": "Dragon Bridge",
-            "bà nà": "Ba Na Hills",
-            "ba na": "Ba Na Hills",
-            "bà nà hills": "Ba Na Hills",
-            "sơn trà": "Son Tra Peninsula",
-            "son tra": "Son Tra Peninsula",
-            "hội an": "Hoi An",
-            "hoi an": "Hoi An",
-            "ngũ hành sơn": "Marble Mountains",
-            "ngu hanh son": "Marble Mountains",
-            "marble mountains": "Marble Mountains",
-        }
-        
         message_lower = message.lower()
-        for pattern, location in known_locations.items():
+        for pattern, location in KNOWN_LOCATIONS.items():
             if pattern in message_lower:
                 return location
         
@@ -513,17 +463,8 @@ Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó
 
     def _extract_category(self, message: str) -> str | None:
         """Extract place category from message."""
-        categories = {
-            "cafe": ["cafe", "cà phê", "coffee"],
-            "restaurant": ["nhà hàng", "quán ăn", "restaurant", "ăn"],
-            "beach": ["bãi biển", "beach", "biển"],
-            "attraction": ["điểm tham quan", "du lịch", "attraction"],
-            "hotel": ["khách sạn", "hotel", "lưu trú"],
-            "bar": ["bar", "pub", "quán bar"],
-        }
-
         message_lower = message.lower()
-        for category, keywords in categories.items():
+        for category, keywords in CATEGORY_KEYWORDS.items():
             if any(kw in message_lower for kw in keywords):
                 return category
 

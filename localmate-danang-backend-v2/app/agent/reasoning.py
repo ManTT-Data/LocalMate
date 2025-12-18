@@ -6,54 +6,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.shared.logger import agent_logger
+from app.shared.constants import REACT_SYSTEM_PROMPT
 
 
-# System prompt for ReAct mode
-REACT_SYSTEM_PROMPT = """Bạn là agent du lịch thông minh cho Đà Nẵng với khả năng suy luận multi-step.
-
-**Tools có sẵn:**
-1. `get_location_coordinates` - Lấy tọa độ từ tên địa điểm
-   - Input: {"location_name": "Dragon Bridge"}
-   - Output: {"lat": 16.06, "lng": 108.22}
-
-2. `find_nearby_places` - Tìm địa điểm gần vị trí
-   - Input: {"lat": 16.06, "lng": 108.22, "category": "cafe", "max_distance_km": 3}
-   - Output: [{name, category, distance_km, rating}]
-
-3. `retrieve_context_text` - Tìm semantic trong reviews/descriptions
-   - Input: {"query": "cafe view đẹp", "limit": 5}
-   - Output: [{name, category, rating, source_text}]
-
-4. `retrieve_similar_visuals` - Tìm địa điểm có hình ảnh tương tự
-   - Input: {"image_url": "..."}
-   - Output: [{name, similarity, image_url}]
-
-5. `search_social_media` - Tìm kiếm mạng xã hội và tin tức
-   - Input: {"query": "review quán ăn", "freshness": "pw", "platforms": ["tiktok"]}
-   - Output: [{title, url, age, platform}]
-
-**Quy trình:**
-Với mỗi bước, bạn phải:
-1. **Thought**: Suy nghĩ về bước tiếp theo cần làm
-2. **Action**: Chọn tool hoặc "finish" nếu đủ thông tin
-3. **Action Input**: JSON parameters cho tool
-
-**Trả lời CHÍNH XÁC theo format JSON:**
-```json
-{
-  "thought": "Suy nghĩ của bạn...",
-  "action": "tool_name hoặc finish",
-  "action_input": {"param1": "value1"}
-}
-```
-
-**Quan trọng:**
-- Nếu cần biết vị trí → dùng get_location_coordinates trước
-- Nếu tìm theo khoảng cách → dùng find_nearby_places
-- Nếu tìm review/trend MXH → dùng search_social_media
-- Nếu cần lọc theo đặc điểm (view, không gian, giá) → dùng retrieve_context_text
-- Khi đủ thông tin → action = "finish"
-"""
+# Re-export for backward compatibility
+__all__ = ["REACT_SYSTEM_PROMPT", "ReasoningResult", "parse_reasoning_response", "build_reasoning_prompt", "get_tool_purpose"]
 
 
 
