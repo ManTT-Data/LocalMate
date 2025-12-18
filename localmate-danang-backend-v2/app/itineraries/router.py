@@ -326,42 +326,57 @@ async def add_stop(
     # Get place snapshot - prefer from request, otherwise from DB
     snapshot = request.snapshot
     if not snapshot:
-        # Try to fetch from database
-        place_result = await db.execute(
-            text("SELECT name, category, address, rating FROM places_metadata WHERE place_id = :place_id"),
-            {"place_id": request.place_id}
-        )
-        place_row = place_result.fetchone()
-        if place_row:
-            snapshot = {
-                "name": place_row.name,
-                "category": place_row.category,
-                "address": place_row.address,
-                "rating": float(place_row.rating) if place_row.rating else None,
+        # Try to fetch from database (optional - don't fail if not found)
+        try:
+            place_result = await db.execute(
+                text("SELECT name, category, address, rating FROM places_metadata WHERE place_id = :place_id"),
+                {"place_id": request.place_id}
+            )
+            place_row = place_result.fetchone()
+            if place_row:
+                snapshot = {
+                    "name": place_row.name,
+                    "category": place_row.category,
+                    "address": place_row.address,
+                    "rating": float(place_row.rating) if place_row.rating else None,
+                }
+        except Exception as e:
+            # Log but don't fail - snapshot is optional
+            print(f"Warning: Could not fetch place metadata for {request.place_id}: {e}")
+    
+    try:
+        # Insert stop
+        result = await db.execute(
+            text("""
+                INSERT INTO itinerary_stops (itinerary_id, day_index, order_index, place_id, arrival_time, stay_minutes, notes, tags, snapshot)
+                VALUES (:itinerary_id, :day_index, :order_index, :place_id, :arrival_time, :stay_minutes, :notes, :tags, :snapshot)
+                RETURNING id, itinerary_id, day_index, order_index, place_id, arrival_time, stay_minutes, notes, tags, snapshot, created_at, updated_at
+            """),
+            {
+                "itinerary_id": itinerary_id,
+                "day_index": request.day_index,
+                "order_index": request.order_index,
+                "place_id": request.place_id,
+                "arrival_time": request.arrival_time,
+                "stay_minutes": request.stay_minutes,
+                "notes": request.notes,
+                "tags": request.tags,
+                "snapshot": snapshot,
             }
-    
-    
-    # Insert stop
-    result = await db.execute(
-        text("""
-            INSERT INTO itinerary_stops (itinerary_id, day_index, order_index, place_id, arrival_time, stay_minutes, notes, tags, snapshot)
-            VALUES (:itinerary_id, :day_index, :order_index, :place_id, :arrival_time, :stay_minutes, :notes, :tags, :snapshot)
-            RETURNING id, itinerary_id, day_index, order_index, place_id, arrival_time, stay_minutes, notes, tags, snapshot, created_at, updated_at
-        """),
-        {
-            "itinerary_id": itinerary_id,
-            "day_index": request.day_index,
-            "order_index": request.order_index,
-            "place_id": request.place_id,
-            "arrival_time": request.arrival_time,
-            "stay_minutes": request.stay_minutes,
-            "notes": request.notes,
-            "tags": request.tags,
-            "snapshot": snapshot,
-        }
-    )
-    await db.commit()
-    row = result.fetchone()
+        )
+        await db.commit()
+        row = result.fetchone()
+    except Exception as e:
+        # Rollback and provide detailed error
+        await db.rollback()
+        error_msg = str(e)
+        print(f"❌ Database error adding stop: {error_msg}")
+        print(f"   place_id: {request.place_id}")
+        print(f"   snapshot: {snapshot}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Database error: {error_msg}"
+        )
     
     stop = Stop(
         id=str(row.id),
