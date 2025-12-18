@@ -36,7 +36,7 @@ const LoginPage = () => {
                 avatar: loginResponse.avatar_url,
               });
 
-              navigate("/");
+              navigate("/map");
             } else {
               setError("Failed to get access token from Google");
               setLoading(false);
