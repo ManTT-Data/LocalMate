@@ -22,6 +22,8 @@ const useItineraryStore = create(
     (set, get) => ({
       // ========== State ==========
       itineraryItems: [],
+      currentItinerary: null, // Current itinerary metadata { id, title, start_date, end_date, etc }
+      includeUserLocation: false, // Whether to include user location as starting point
       isLoading: false,
       error: null,
       activeBooking: null, // Currently booking stop { dayIndex, stopId }
@@ -56,6 +58,21 @@ const useItineraryStore = create(
        * Set error state
        */
       setError: (error) => set({ error, isLoading: false }),
+
+      /**
+       * Set current itinerary metadata
+       */
+      setCurrentItinerary: (itinerary) => set({ currentItinerary: itinerary }),
+
+      /**
+       * Toggle whether to include user location as starting point
+       */
+      toggleUserLocation: () => {
+        const current = get().includeUserLocation;
+        set({ includeUserLocation: !current });
+        // Clear route cache to force recalculation
+        set({ routeCache: {} });
+      },
 
       /**
        * Reorder stops within a specific day
@@ -559,12 +576,17 @@ const useItineraryStore = create(
             if (firstItinerary?.days) {
               set({
                 itineraryItems: firstItinerary.days,
+                currentItinerary: firstItinerary, // Store full itinerary metadata
                 isLoading: false,
                 error: null,
               });
             }
           } else {
-            set({ itineraryItems: [], isLoading: false });
+            set({
+              itineraryItems: [],
+              currentItinerary: null,
+              isLoading: false,
+            });
           }
         } catch (error) {
           console.error("Error fetching itineraries:", error);

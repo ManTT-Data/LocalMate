@@ -1,9 +1,13 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Flex, Badge, Text, Group } from "@mantine/core";
+import { Flex, Badge, Text, Group, Switch, Tooltip } from "@mantine/core";
+import { IconMapPin } from "@tabler/icons-react";
 import { Z_INDEX } from "./constants";
+import useItineraryStore from "../../stores/useItineraryStore";
 
-const DayHeader = ({ day, title, date }) => {
+const DayHeader = ({ day, title, date, itineraryName }) => {
+  const { includeUserLocation, toggleUserLocation } = useItineraryStore();
+
   return (
     <Flex
       justify="space-between"
@@ -22,13 +26,40 @@ const DayHeader = ({ day, title, date }) => {
         <Badge color="black" variant="outline" size="lg" radius="sm">
           Day {day}
         </Badge>
+        {itineraryName && (
+          <Text fw={700} size="md" c="dimmed">
+            {itineraryName} -
+          </Text>
+        )}
         <Text fw={700} size="md">
           {title}
         </Text>
       </Group>
-      <Text size="xs" c="dimmed" fw={500}>
-        {date}
-      </Text>
+      <Group gap="sm">
+        <Tooltip
+          label="Start route from your current location"
+          position="left"
+          withArrow
+        >
+          <Switch
+            checked={includeUserLocation}
+            onChange={toggleUserLocation}
+            size="sm"
+            color="blue"
+            thumbIcon={
+              includeUserLocation ? <IconMapPin size={12} stroke={3} /> : null
+            }
+            label={
+              <Text size="xs" fw={500}>
+                Start from my location
+              </Text>
+            }
+          />
+        </Tooltip>
+        <Text size="xs" c="dimmed" fw={500}>
+          {date}
+        </Text>
+      </Group>
     </Flex>
   );
 };
@@ -37,6 +68,7 @@ DayHeader.propTypes = {
   day: PropTypes.number.isRequired,
   title: PropTypes.string.isRequired,
   date: PropTypes.string.isRequired,
+  itineraryName: PropTypes.string,
 };
 
 export default React.memo(DayHeader);

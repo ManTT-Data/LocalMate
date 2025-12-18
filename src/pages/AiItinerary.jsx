@@ -3,9 +3,13 @@ import AppLayout from "../components/layout/AppLayout/AppLayout";
 import ItineraryList from "../components/Itinerary/ItineraryList";
 import ItineraryMap from "../components/Itinerary/ItineraryMap";
 import ContextualToolbar from "../components/ContextualToolbar/ContextualToolbar";
+import EditItineraryModal from "../components/Itinerary/EditItineraryModal";
+import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
 import {
   fetchUserItinerariesAPI,
   fetchItineraryByIdAPI,
+  deleteItineraryAPI,
 } from "../apis/itineraryService";
 import { HARDCODED_TEST_USER } from "../utils/constants";
 import useItineraryStore from "../stores/useItineraryStore";
@@ -30,12 +34,14 @@ import {
   IconWand,
   IconMapPin,
   IconAlertCircle,
+  IconTrash,
 } from "@tabler/icons-react";
 
 const AiItinerary = () => {
   const [activeTab, setActiveTab] = useState("itinerary"); // map, itinerary, bookings
   const [itineraryMetadata, setItineraryMetadata] = useState(null);
   const [currentItineraryId, setCurrentItineraryId] = useState(null); // Store itinerary ID for direct stop operations
+  const [editModalOpened, setEditModalOpened] = useState(false);
 
   // Zustand store - unified state management
   const {
@@ -43,6 +49,7 @@ const AiItinerary = () => {
     isLoading,
     error,
     setItinerary,
+    setCurrentItinerary,
     setLoading,
     setError,
     plan,
@@ -89,6 +96,9 @@ const AiItinerary = () => {
 
             // Set itinerary items (transformed days array)
             setItinerary(firstItinerary.days || []);
+
+            // IMPORTANT: Set currentItinerary in store for delete functionality
+            setCurrentItinerary(firstItinerary);
           }
         } else {
           // No itineraries found
@@ -192,6 +202,48 @@ const AiItinerary = () => {
     }
   };
 
+  // Handle edit itinerary
+  const handleEditItinerary = () => {
+    setEditModalOpened(true);
+  };
+
+  // Handle delete itinerary
+  const handleDeleteItinerary = () => {
+    modals.openConfirmModal({
+      title: "Delete Itinerary",
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete this itinerary? This action cannot be
+          undone.
+        </Text>
+      ),
+      labels: { confirm: "Delete", cancel: "Cancel" },
+      confirmProps: { color: "red" },
+      onConfirm: async () => {
+        try {
+          await deleteItineraryAPI(
+            currentItineraryId,
+            HARDCODED_TEST_USER.userId
+          );
+          notifications.show({
+            title: "Success",
+            message: "Itinerary deleted successfully",
+            color: "green",
+          });
+          // Reload page or redirect to itinerary list
+          window.location.reload();
+        } catch (error) {
+          console.error("Error deleting itinerary:", error);
+          notifications.show({
+            title: "Error",
+            message: "Failed to delete itinerary",
+            color: "red",
+          });
+        }
+      },
+    });
+  };
+
   const currentItinerary = itineraryItems[0]; // Displaying Day 1 for now
 
   // Show loading state
@@ -284,11 +336,21 @@ const AiItinerary = () => {
                   </Text>
                 </Box>
                 <Group gap="xs">
-                  <ActionIcon variant="subtle" color="gray" size="lg">
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    onClick={handleEditItinerary}
+                  >
                     <IconAdjustments size={20} />
                   </ActionIcon>
-                  <ActionIcon variant="subtle" color="gray" size="lg">
-                    <IconFileTypePdf size={20} />
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    onClick={handleDeleteItinerary}
+                  >
+                    <IconTrash size={20} />
                   </ActionIcon>
                 </Group>
               </Flex>
@@ -368,6 +430,13 @@ const AiItinerary = () => {
           </Box>
         </Flex>
       </Flex>
+
+      {/* Edit Itinerary Modal */}
+      <EditItineraryModal
+        opened={editModalOpened}
+        onClose={() => setEditModalOpened(false)}
+        itinerary={itineraryMetadata}
+      />
     </AppLayout>
   );
 };

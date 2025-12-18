@@ -14,9 +14,10 @@ import {
 import {
   createItineraryAPI,
   fetchUserItinerariesAPI,
+  fetchItineraryByIdAPI,
+  optimizeItineraryAPI,
 } from "../../apis/itineraryService";
 import { addStopAPI } from "../../apis/stopService";
-import { optimizePlan } from "../../apis/plannerService";
 import { HARDCODED_TEST_USER } from "../../utils/constants";
 import useItineraryStore from "../../stores/useItineraryStore";
 
@@ -45,7 +46,8 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   // Access Zustand store to get current itinerary
-  const { itineraryItems } = useItineraryStore();
+  const { itineraryItems, setItinerary, currentItinerary } =
+    useItineraryStore();
 
   const handleAddToItinerary = async () => {
     if (isAdded || isAdding) return;
@@ -146,6 +148,8 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
           address: place.address,
           rating: place.rating,
           image: place.image,
+          lat: place.lat,
+          lng: place.lng,
         },
       };
 
@@ -167,10 +171,24 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
 
       console.log("✅ Stop added successfully:", stopResponse);
 
-      // Step 6: Optional - Try to optimize the plan
+      // Step 6: Refresh itinerary to update UI immediately
       try {
-        await optimizePlan(itineraryId);
-        console.log("✅ Plan optimized");
+        const updatedItinerary = await fetchItineraryByIdAPI(
+          itineraryId,
+          HARDCODED_TEST_USER.userId
+        );
+        if (updatedItinerary?.days) {
+          setItinerary(updatedItinerary.days);
+          console.log("✅ Itinerary refreshed, UI updated");
+        }
+      } catch (refreshError) {
+        console.warn("Failed to refresh itinerary:", refreshError);
+      }
+
+      // Step 7: Optional - Try to optimize the itinerary route
+      try {
+        await optimizeItineraryAPI(itineraryId, 1);
+        console.log("✅ Itinerary route optimized");
       } catch (optimizeError) {
         console.warn(
           "Optimization failed, but itinerary was created:",

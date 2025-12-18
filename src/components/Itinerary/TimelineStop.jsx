@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import { Box, Paper } from "@mantine/core";
+import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
 import useItineraryStore from "../../stores/useItineraryStore";
 import BookingModal from "../Booking/BookingModal";
 import TimelineDot from "./TimelineDot";
@@ -14,7 +16,8 @@ const TimelineStop = ({ stop, onItemClick, provided, snapshot, dayIndex }) => {
   const isDragging = snapshot?.isDragging || false;
 
   // Zustand store
-  const { lastBookedStopId, removeStop, updateStop } = useItineraryStore();
+  const { lastBookedStopId, currentItinerary, deleteStopBackend, updateStop } =
+    useItineraryStore();
 
   // Booking modal state
   const [bookingModal, setBookingModal] = useState({
@@ -55,12 +58,68 @@ const TimelineStop = ({ stop, onItemClick, provided, snapshot, dayIndex }) => {
     // Empty function for now
   }, []);
 
-  // Memoize remove handler
+  // Memoize remove handler with backend persistence
   const handleRemove = useCallback(() => {
-    if (dayIndex !== undefined && stop.id) {
-      removeStop(dayIndex, stop.id);
-    }
-  }, [dayIndex, stop.id, removeStop]);
+    console.log("🗑️ Remove clicked", {
+      dayIndex,
+      stopId: stop.id,
+      currentItinerary,
+    });
+
+    modals.openConfirmModal({
+      title: "Remove Stop",
+      children:
+        "Are you sure you want to remove this stop from your itinerary?",
+      labels: { confirm: "Remove", cancel: "Cancel" },
+      confirmProps: { color: "red" },
+      onConfirm: async () => {
+        console.log("✅ User confirmed delete");
+
+        if (dayIndex !== undefined && stop.id && currentItinerary?.id) {
+          console.log("🔄 Deleting stop from backend...", {
+            itineraryId: currentItinerary.id,
+            dayIndex,
+            stopId: stop.id,
+          });
+
+          try {
+            const { HARDCODED_TEST_USER } = await import(
+              "../../utils/constants"
+            );
+            await deleteStopBackend(
+              currentItinerary.id,
+              dayIndex,
+              stop.id,
+              HARDCODED_TEST_USER.userId
+            );
+            notifications.show({
+              title: "Success",
+              message: "Stop removed from itinerary",
+              color: "green",
+            });
+          } catch (error) {
+            console.error("❌ Error removing stop:", error);
+            notifications.show({
+              title: "Error",
+              message: "Failed to remove stop",
+              color: "red",
+            });
+          }
+        } else {
+          console.error("❌ Missing required data:", {
+            dayIndex,
+            stopId: stop.id,
+            currentItinerary,
+          });
+          notifications.show({
+            title: "Error",
+            message: "Cannot delete - missing itinerary information",
+            color: "red",
+          });
+        }
+      },
+    });
+  }, [dayIndex, stop.id, currentItinerary, deleteStopBackend]);
 
   // Memoize replace handler
   const handleReplace = useCallback(() => {

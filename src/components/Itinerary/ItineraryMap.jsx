@@ -12,6 +12,9 @@ import "leaflet/dist/leaflet.css";
 import { getRoute, getTileLayerUrl } from "../../apis/graphhopper";
 import useItineraryStore from "../../stores/useItineraryStore";
 import useRouteCalculation from "../../hooks/useRouteCalculation";
+import useGeolocation from "../../hooks/useGeolocation";
+import { ActionIcon, Loader } from "@mantine/core";
+import { IconCurrentLocation } from "@tabler/icons-react";
 import {
   createCustomIcon,
   extractRoutePositions,
@@ -29,6 +32,19 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+// Custom user location icon
+const userIcon = new L.DivIcon({
+  className: "custom-marker",
+  html: `
+    <div class="flex flex-col items-center gap-1" style="transform: translate(-50%, -8px);">
+      <div class="size-4 rounded-full bg-blue-500 border-2 border-white shadow-lg animate-pulse"></div>
+      <div class="bg-white px-2 py-1 rounded-md text-xs font-bold shadow-md whitespace-nowrap">You</div>
+    </div>
+  `,
+  iconSize: null,
+  iconAnchor: [0, 0],
 });
 
 /**
@@ -64,10 +80,35 @@ const ItineraryMap = ({
   routeOpacity = MAP_DEFAULTS.ROUTE_OPACITY,
 }) => {
   const [routeData, setRouteData] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
+
+  // Get geolocation
+  const { location: userLocation, error: locationError } = useGeolocation();
 
   // Get stops from Zustand store
-  const { itineraryItems } = useItineraryStore();
+  const { itineraryItems, includeUserLocation } = useItineraryStore();
   const stops = itineraryItems[dayIndex]?.stops || [];
+
+  // Augment stops with user location if enabled
+  const stopsForRouting = React.useMemo(() => {
+    if (
+      includeUserLocation &&
+      userLocation.loaded &&
+      userLocation.coordinates.lat
+    ) {
+      const userLocationStop = {
+        id: "user-location-start",
+        type: "start",
+        name: "Your Location",
+        snapshot: {
+          lat: userLocation.coordinates.lat,
+          lng: userLocation.coordinates.lng,
+        },
+      };
+      return [userLocationStop, ...stops];
+    }
+    return stops;
+  }, [includeUserLocation, userLocation, stops]);
 
   // Use route calculation hook (auto-recalculates when stops change)
   const { routeData: cachedRouteData } = useRouteCalculation(dayIndex);
@@ -81,7 +122,7 @@ const ItineraryMap = ({
 
     // Otherwise fetch route manually
     const fetchRoute = async () => {
-      const waypoints = extractWaypoints(stops);
+      const waypoints = extractWaypoints(stopsForRouting);
 
       if (waypoints.length > 1) {
         const data = await getRoute(waypoints);
@@ -92,13 +133,28 @@ const ItineraryMap = ({
     };
 
     fetchRoute();
-  }, [stops, cachedRouteData]);
+  }, [stopsForRouting, cachedRouteData]);
 
   // Memoize route positions extraction
   const routePositions = useMemo(
     () => extractRoutePositions(routeData),
     [routeData]
   );
+
+  // Handle Locate Me button
+  const handleLocateMe = () => {
+    if (userLocation.loaded && userLocation.coordinates.lat && mapInstance) {
+      mapInstance.flyTo(
+        [userLocation.coordinates.lat, userLocation.coordinates.lng],
+        14,
+        {
+          duration: 1.5,
+        }
+      );
+    } else {
+      console.warn("Location not ready or map not initialized");
+    }
+  };
 
   return (
     <div className="w-full h-full relative">
@@ -107,7 +163,12 @@ const ItineraryMap = ({
         routePositions={routePositions}
         stops={stops}
       />
-      <MapContainer center={center} zoom={zoom} className="w-full h-full z-0">
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        className="w-full h-full z-0"
+        ref={setMapInstance}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={getTileLayerUrl("standard")}
@@ -126,9 +187,27 @@ const ItineraryMap = ({
           />
         )}
 
-        {stops.map((stop, index) => {
-          const position = stop.location || stop.destination?.location;
-          if (!position) return null;
+        {stopsForRouting.map((stop, index) => {
+          // Try to get position from multiple sources (in priority order)
+          let position = null;
+
+          // 1. From snapshot (newly added stops with snapshot)
+          if (stop.snapshot?.lat && stop.snapshot?.lng) {
+            position = { lat: stop.snapshot.lat, lng: stop.snapshot.lng };
+          }
+          // 2. From destination object directly (has lat/lng fields)
+          else if (stop.destination?.lat && stop.destination?.lng) {
+            position = { lat: stop.destination.lat, lng: stop.destination.lng };
+          }
+          // 3. From location or destination.location (legacy format)
+          else {
+            position = stop.location || stop.destination?.location;
+          }
+
+          if (!position || !position.lat || !position.lng) {
+            console.warn(`Stop ${index} missing coordinates:`, stop);
+            return null;
+          }
 
           return (
             <Marker
@@ -139,8 +218,39 @@ const ItineraryMap = ({
           );
         })}
 
+        {/* User Location Marker */}
+        {userLocation.loaded && userLocation.coordinates.lat && (
+          <Marker
+            position={[
+              userLocation.coordinates.lat,
+              userLocation.coordinates.lng,
+            ]}
+            icon={userIcon}
+          />
+        )}
+
         <FitBounds routeData={routeData} />
       </MapContainer>
+
+      {/* Locate Me Button */}
+      <ActionIcon
+        variant="filled"
+        color="white"
+        size="xl"
+        radius="xl"
+        style={{
+          position: "absolute",
+          bottom: "1.5rem",
+          right: "1.5rem",
+          zIndex: 1000,
+          boxShadow: "var(--mantine-shadow-md)",
+          color: "var(--mantine-color-dark-4)",
+        }}
+        onClick={handleLocateMe}
+        loading={!userLocation.loaded}
+      >
+        <IconCurrentLocation size={24} />
+      </ActionIcon>
 
       {/* Helper Badge */}
       <div className="absolute top-[300px] left-[280px] pointer-events-none">

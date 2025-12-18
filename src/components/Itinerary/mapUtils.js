@@ -64,6 +64,18 @@ export const extractRoutePositions = (routeData) => {
  */
 export const extractWaypoints = (stops) => {
   return stops
-    .filter((stop) => stop.location || stop.destination?.location)
-    .map((stop) => stop.location || stop.destination.location);
+    .map((stop) => {
+      // Try to get coordinates from multiple sources (in priority order)
+      // 1. From snapshot
+      if (stop.snapshot?.lat && stop.snapshot?.lng) {
+        return { lat: stop.snapshot.lat, lng: stop.snapshot.lng };
+      }
+      // 2. From destination directly
+      if (stop.destination?.lat && stop.destination?.lng) {
+        return { lat: stop.destination.lat, lng: stop.destination.lng };
+      }
+      // 3. From location or destination.location
+      return stop.location || stop.destination?.location;
+    })
+    .filter((location) => location && location.lat && location.lng);
 };

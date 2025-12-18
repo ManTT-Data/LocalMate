@@ -230,6 +230,27 @@ export const deleteStopAPI = async (
 };
 
 /**
+ * Optimize itinerary route for a specific day
+ * @param {string} itineraryId - Itinerary ID
+ * @param {number} startDay - Day to optimize (1-indexed)
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Optimization result
+ */
+export const optimizeItineraryAPI = async (
+  itineraryId,
+  startDay = 1,
+  userId = HARDCODED_TEST_USER.userId
+) => {
+  const response = await apiHelper.post(
+    `${apiUrls.itinerary.get(
+      itineraryId
+    )}/optimize?user_id=${userId}&start_day=${startDay}`
+  );
+
+  return response;
+};
+
+/**
  * Book a service (Grab, ticket, reservation)
  * @param {string} stopId - ID of the stop
  * @param {string} serviceType - Type of service (grab, ticket, reservation)
@@ -296,6 +317,7 @@ export default {
   addStopAPI,
   updateStopAPI,
   deleteStopAPI,
+  optimizeItineraryAPI,
   bookServiceAPI, // Deprecated
   cancelBookingAPI, // Deprecated
 };

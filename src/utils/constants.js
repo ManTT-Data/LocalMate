@@ -11,7 +11,8 @@ export const HARDCODED_TEST_USER = {
 export const googlClientId =
   "261949591384-cvb3pf4lveqdkorql609mf95gia0pn0r.apps.googleusercontent.com";
 
-export const baseUrl = "https://cuong2004-localmate.hf.space";
+// export const baseUrl = "https://cuong2004-localmate.hf.space";
+export const baseUrl = "http://127.0.0.1:8000/";
 
 export const API_VERSION = "/api/v1";
 

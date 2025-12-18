@@ -4,13 +4,22 @@ import { Box, Text, Button } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import useItineraryStore from "../../stores/useItineraryStore";
+import useGeolocation from "../../hooks/useGeolocation";
 import DayHeader from "./DayHeader";
 import TimelineStop from "./TimelineStop";
 import { DND_TYPES, COLORS, SIZES, Z_INDEX } from "./constants";
 
 const ItineraryList = ({ onItemClick }) => {
   // Use unified Zustand store
-  const { itineraryItems, reorderStops } = useItineraryStore();
+  const {
+    itineraryItems,
+    reorderStops,
+    currentItinerary,
+    includeUserLocation,
+  } = useItineraryStore();
+
+  // Get user location
+  const { location: userLocation } = useGeolocation();
 
   // Memoized drag end handler for better performance
   const handleDragEnd = useCallback(
@@ -65,8 +74,9 @@ const ItineraryList = ({ onItemClick }) => {
             {/* Day Header */}
             <DayHeader
               day={dayItem.day}
-              title={dayItem.title}
+              // title={dayItem.title}
               date={dayItem.date}
+              // itineraryName={currentItinerary?.title}
             />
 
             {/* Timeline */}
@@ -88,39 +98,81 @@ const ItineraryList = ({ onItemClick }) => {
                   droppableId={`stops-${dayIndex}`}
                   type={DND_TYPES.STOPS}
                 >
-                  {(provided, snapshot) => (
-                    <Box
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      style={{
-                        backgroundColor: snapshot.isDraggingOver
-                          ? "rgba(59, 130, 246, 0.05)"
-                          : "transparent",
-                        borderRadius: "8px",
-                        transition: "background-color 0.2s",
-                      }}
-                    >
-                      {dayItem.stops.map((stop, stopIndex) => (
-                        <Draggable
-                          key={`stop-${dayIndex}-${stopIndex}`}
-                          draggableId={`stop-${dayIndex}-${stopIndex}`}
-                          index={stopIndex}
-                          isDragDisabled={!stop.destination} // Only allow dragging destination stops
-                        >
-                          {(provided, snapshot) => (
-                            <TimelineStop
-                              stop={stop}
-                              onItemClick={onItemClick}
-                              provided={provided}
-                              snapshot={snapshot}
-                              dayIndex={dayIndex}
-                            />
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </Box>
-                  )}
+                  {(provided, snapshot) => {
+                    // Prepare stops array with optional user location
+                    let stopsToRender = dayItem.stops;
+
+                    // If includeUserLocation is enabled and we have user location
+                    if (
+                      includeUserLocation &&
+                      userLocation.loaded &&
+                      userLocation.coordinates.lat
+                    ) {
+                      // Create user location stop
+                      const userLocationStop = {
+                        id: "user-location-start",
+                        type: "start",
+                        name: "Your Location",
+                        locationName: "Current Position",
+                        location: {
+                          lat: userLocation.coordinates.lat,
+                          lng: userLocation.coordinates.lng,
+                        },
+                        snapshot: {
+                          lat: userLocation.coordinates.lat,
+                          lng: userLocation.coordinates.lng,
+                        },
+                        isUserLocation: true,
+                      };
+
+                      // Prepend to stops
+                      stopsToRender = [userLocationStop, ...dayItem.stops];
+                    }
+
+                    return (
+                      <Box
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        style={{
+                          backgroundColor: snapshot.isDraggingOver
+                            ? "rgba(59, 130, 246, 0.05)"
+                            : "transparent",
+                          borderRadius: "8px",
+                          transition: "background-color 0.2s",
+                        }}
+                      >
+                        {stopsToRender.map((stop, stopIndex) => (
+                          <Draggable
+                            key={
+                              stop.isUserLocation
+                                ? "user-location-start"
+                                : `stop-${dayIndex}-${stopIndex}`
+                            }
+                            draggableId={
+                              stop.isUserLocation
+                                ? "user-location-start"
+                                : `stop-${dayIndex}-${stopIndex}`
+                            }
+                            index={stopIndex}
+                            isDragDisabled={
+                              stop.isUserLocation || !stop.destination
+                            } // Disable drag for user location and non-destinations
+                          >
+                            {(provided, snapshot) => (
+                              <TimelineStop
+                                stop={stop}
+                                onItemClick={onItemClick}
+                                provided={provided}
+                                snapshot={snapshot}
+                                dayIndex={dayIndex}
+                              />
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </Box>
+                    );
+                  }}
                 </Droppable>
               )}
 
