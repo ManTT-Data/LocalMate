@@ -22,18 +22,21 @@ import httpx
 # =============================================================================
 
 # API Settings - Use localhost for local testing
-API_BASE = "http://localhost:8000/api/v1"
+API_BASE = "https://cuong2004-localmate.hf.space/api/v1"
+# API_BASE = "http://localhost:8000/api/v1"
 USER_ID = "test_comprehensive"
 
 # Delay Settings (in seconds)
-SINGLE_MODE_DELAY = 5        # Delay between queries in single mode
-REACT_MODE_DELAY = 20        # Delay between queries in ReAct mode
-MODE_SWITCH_DELAY = 5        # Delay between switching modes
+SINGLE_MODE_DELAY = 1        # Delay between queries in single mode
+REACT_MODE_DELAY = 1        # Delay between queries in ReAct mode
+MODE_SWITCH_DELAY = 1        # Delay between switching modes
 REQUEST_TIMEOUT = 60        # Timeout for each API request
 
 # Provider settings
-PROVIDER = "MegaLLM"
-MODEL = "deepseek-ai/deepseek-v3.1-terminus"
+# PROVIDER = "MegaLLM"
+# MODEL = "deepseek-ai/deepseek-v3.1-terminus"
+PROVIDER = "Google"
+MODEL = "gemini-2.5-flash"
 
 # =============================================================================
 # 5 TEST CASES - Covering ALL tools

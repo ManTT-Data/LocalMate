@@ -1,8 +1,8 @@
 # LocalMate Agent Comprehensive Test Report
 
-**Generated:** 2025-12-19 21:59:06  
-**Provider:** MegaLLM  
-**Model:** deepseek-ai/deepseek-v3.1-terminus
+**Generated:** 2025-12-19 23:33:08  
+**Provider:** Google  
+**Model:** gemini-2.5-flash
 
 ---
 
@@ -11,8 +11,8 @@
 | Metric | Single Mode | ReAct Mode |
 |--------|:-----------:|:----------:|
 | Success Rate | 5/5 | 5/5 |
-| Avg Duration | 13255ms | 24551ms |
-| Unique Tools | 3 | 4 |
+| Avg Duration | 7690ms | 9107ms |
+| Unique Tools | 3 | 3 |
 
 ### Tools Covered
 
@@ -20,7 +20,7 @@
 |------|:-----------:|:----------:|
 | `retrieve_context_text` | ✅ | ✅ |
 | `find_nearby_places` | ✅ | ✅ |
-| `search_social_media` | ✅ | ✅ |
+| `search_social_media` | ✅ | ❌ |
 | No tools (greeting) | ✅ | ✅ |
 
 ---
@@ -30,10 +30,10 @@
 | ID | Description | Single Tools | ReAct Tools | Match |
 |----|-------------|--------------|-------------|-------|
 | 1 | Greeting - No tools expected | ∅ (none) | ∅ (none) | ✅ Match/✅ Match |
-| 2 | Text search - Semantic search  | retrieve_context_text | retrieve_context_text, get_location_coordinates, find_nearby_places | ✅ Match/⚠️ Extra tools |
+| 2 | Text search - Semantic search  | retrieve_context_text | retrieve_context_text | ✅ Match/✅ Match |
 | 3 | Location search - Neo4j spatia | find_nearby_places | get_location_coordinates, find_nearby_places | ✅ Match/⚠️ Extra tools |
 | 4 | Social search - Brave API news | search_social_media | ∅ (none) | ✅ Match/❌ Mismatch |
-| 5 | Complex query - Multiple tools | search_social_media, find_nearby_places | get_location_coordinates, find_nearby_places, retrieve_context_text, search_social_media | ⚠️ Partial/⚠️ Extra tools |
+| 5 | Complex query - Multiple tools | search_social_media, find_nearby_places | get_location_coordinates, find_nearby_places, retrieve_context_text | ⚠️ Partial/⚠️ Extra tools |
 
 ---
 
@@ -46,12 +46,12 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 3818ms | None | 0 |
-| ReAct | ✅ | 3504ms | None | 0 |
+| Single | ✅ | 987ms | None | 0 |
+| ReAct | ✅ | 1277ms | None | 0 |
 
-**Single Response:** Xin chào! ❤️ Rất vui được gặp bạn! Mình là LocalMate - trợ lý du lịch Đà Nẵng của bạn. Cần mình giúp gì về ăn uống, vui chơi, hay địa điểm check-in nà...
+**Single Response:** Chào bạn! 😊 LocalMate đây. Có gì mình giúp được bạn hôm nay không?...
 
-**ReAct Response:** Xin chào bạn! 😊 Mình là trợ lý du lịch thông minh cho Đà Nẵng. Mình có thể giúp bạn tìm kiếm nhà hàng ngon, quán cafe đẹp, điểm vui chơi và nhiều địa ...
+**ReAct Response:** Chào bạn! Tôi là trợ lý du lịch thông minh cho Đà Nẵng. Bạn đang tìm kiếm thông tin gì về Đà Nẵng vậy? Hãy cho tôi biết nhé!...
 
 ---
 
@@ -62,18 +62,16 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 24590ms | retrieve_context_text | 3 |
-| ReAct | ✅ | 31407ms | retrieve_context_text, get_location_coordinates, find_nearby_places | 3 |
+| Single | ✅ | 9393ms | retrieve_context_text | 3 |
+| ReAct | ✅ | 6806ms | retrieve_context_text | 1 |
 
-**Single Response:** Chào bạn! 😊 Mình tìm được một số quán cafe view đẹp ở Đà Nẵng cho bạn đây:
+**Single Response:** Chào bạn! 😊 Đà Nẵng có rất nhiều quán cafe với view đẹp để bạn ghé thăm. Dựa trên yêu cầu của bạn, mình gợi ý 3 quán này nhé:
 
-🌟 **Nhớ Một Người** - Rating 4.9
-- View đẹp với không gian lãng mạn, view ...
+1.  **Nhớ Một Người** (...
 
-**ReAct Response:** Chào bạn! 😊 Mình tìm được những quán cafe có view đẹp ở Đà Nẵng cho bạn đây:
+**ReAct Response:** Chào bạn! Để tìm quán cà phê có view đẹp ở Đà Nẵng, tôi có một gợi ý nổi bật dành cho bạn đây:
 
-🌟 **NAM house Cafe** - Rating 4.7
-- Quán cafe với không gian retro ấm cú...
+**FIRGUN CORNER COFFEE**: Quán này được biết đến với k...
 
 ---
 
@@ -84,17 +82,16 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 12070ms | find_nearby_places | 3 |
-| ReAct | ✅ | 23010ms | get_location_coordinates, find_nearby_places | 3 |
+| Single | ✅ | 7216ms | find_nearby_places | 3 |
+| ReAct | ✅ | 6542ms | get_location_coordinates, find_nearby_places | 3 |
 
-**Single Response:** Chào bạn! 😊 Dựa trên tìm kiếm của bạn về các nhà hàng gần Cầu Rồng, mình gợi ý cho bạn những địa điểm này:
+**Single Response:** Chào bạn, gần khu vực Cầu Rồng có một số nhà hàng rất đáng thử đây:
 
-🍕 **Pizza 4P's Hoang Van Thu** - Rating 4....
+1.  **Pizza 4P's Hoang Van Thu**: Chỉ cách Cầu Rồng khoảng 0.57 km, nhà hàng pizz...
 
-**ReAct Response:** Chào bạn! 😊 Dưới đây là những nhà hàng ngon gần Cầu Rồng mà mình tìm được cho bạn:
+**ReAct Response:** Chào bạn! Gần Cầu Rồng có rất nhiều nhà hàng ngon để bạn lựa chọn. Dưới đây là top 3 gợi ý nổi bật mà bạn có thể tham khảo nhé:
 
-🌟 **Pizza 4P's Hoang Van Thu** - Rating 4.8
-- Nhà hàng pizza với đ...
+1.  **Pizza 4P's Hoan...
 
 ---
 
@@ -105,15 +102,12 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 15918ms | search_social_media | 0 |
-| ReAct | ✅ | 15744ms | None | 0 |
+| Single | ✅ | 11092ms | search_social_media | 0 |
+| ReAct | ✅ | 11059ms | None | 0 |
 
-**Single Response:** Chào bạn! 😊 Mình tìm được một số quán ăn đang hot trên TikTok Đà Nẵng cho bạn đây:
+**Single Response:** Chào bạn, để tìm các quán ăn đang hot trên TikTok ở Đà Nẵng, tôi cần thực hiện tìm kiếm trên các nền tảng mạng xã hội. Hiện tại, tôi chưa có kết quả c...
 
-🌟 **Cà Mèn Quán Đà Nẵng** - Trend TikTok
-- Đang được cộng đồng Tik...
-
-**ReAct Response:** Xin lỗi, đã xảy ra lỗi: Unknown error...
+**ReAct Response:** Chào bạn! Hiện tại tôi chưa có thông tin cụ thể về các quán ăn "hot trên TikTok" ở Đà Nẵng. Tuy nhiên, tôi có thể gợi ý cho bạn những nhà hàng được đá...
 
 ---
 
@@ -124,15 +118,16 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 9881ms | search_social_media, find_nearby_places | 2 |
-| ReAct | ✅ | 49088ms | get_location_coordinates, find_nearby_places, retrieve_context_text, search_social_media | 0 |
+| Single | ✅ | 9760ms | search_social_media, find_nearby_places | 3 |
+| ReAct | ✅ | 19850ms | get_location_coordinates, find_nearby_places, retrieve_context_text | 3 |
 
-**Single Response:** Chào bạn! 😊 Mình tìm được những quán cafe không gian đẹp gần biển Mỹ Khê có review tốt cho bạn đây:
+**Single Response:** Chào bạn, gần biển Mỹ Khê có một vài quán cà phê với không gian đẹp và được đánh giá tốt mà bạn có thể tham khảo đây:
 
-🌟 **Sound Cafe** - Rating 4.7
-- Quán cafe acousti...
+1.  **Sound cafe**: Chỉ cách bi...
 
-**ReAct Response:** Xin lỗi, đã xảy ra lỗi: Unknown error...
+**ReAct Response:** Chào bạn! Để tìm quán cà phê có không gian đẹp và review tốt gần biển Mỹ Khê, tôi có một vài gợi ý tuyệt vời cho bạn đây:
+
+1.  **XLIII Specialty Coffe...
 
 ---
 
@@ -141,7 +136,7 @@
 | Criteria | Single Mode | ReAct Mode |
 |----------|:-----------:|:----------:|
 | All tests passed | ✅ | ✅ |
-| All 3 search tools covered | ✅ | ✅ |
+| All 3 search tools covered | ✅ | ❌ |
 | Greeting detection works | ✅ | ✅ |
 
 **Overall:** 🎉 ALL TESTS PASSED!
