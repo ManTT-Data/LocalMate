@@ -10,6 +10,7 @@ Supports multiple LLM providers: Google (Gemini) and MegaLLM (DeepSeek).
 """
 
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -83,6 +84,7 @@ class ChatResult:
     tools_used: list[str] = field(default_factory=list)
     total_duration_ms: float = 0
     tool_results: list = field(default_factory=list)  # List of ToolCall with results
+    selected_place_ids: list[str] = field(default_factory=list)  # LLM-selected place IDs
 
 
 class MMCAAgent:
@@ -209,7 +211,7 @@ class MMCAAgent:
         agent_logger.workflow_step("Step 3: Synthesize Response")
         
         llm_start = time.time()
-        response = await self._synthesize_response(message, tool_results, image_url, history)
+        response, selected_place_ids = await self._synthesize_response(message, tool_results, image_url, history)
         llm_duration = (time.time() - llm_start) * 1000
         
         agent_logger.llm_response(self.provider, response[:100], tokens=None)
@@ -228,14 +230,15 @@ class MMCAAgent:
         workflow.total_duration_ms = total_duration
         
         # Log complete
-        agent_logger.api_response("/chat", 200, {"response_len": len(response)}, total_duration)
+        agent_logger.api_response("/chat", 200, {"response_len": len(response), "places": len(selected_place_ids)}, total_duration)
         
         return ChatResult(
             response=response,
             workflow=workflow,
             tools_used=workflow.tools_used,
             total_duration_ms=total_duration,
-            tool_results=tool_results,  # Include tool results for place extraction
+            tool_results=tool_results,
+            selected_place_ids=selected_place_ids,
         )
 
     def _detect_intent(self, message: str, image_url: str | None) -> str:
@@ -269,6 +272,35 @@ class MMCAAgent:
         }
         return purposes.get(tool_name, tool_name)
 
+    def _is_greeting_or_simple_query(self, message: str) -> bool:
+        """
+        Check if message is a simple greeting/small-talk that doesn't need tools.
+        
+        Returns True for greetings, thanks, simple acknowledgments.
+        """
+        simple_patterns = [
+            # English
+            "hello", "hi", "hey", "yo", "sup",
+            "thank", "thanks", "bye", "goodbye",
+            "ok", "okay", "yes", "no", "good", "great", "nice",
+            # Vietnamese
+            "xin chào", "chào", "chào bạn", "ê", "alo",
+            "cảm ơn", "cám ơn", "thanks", "tạm biệt", "bye",
+            "ok", "được", "tốt", "hay", "ừ", "ờ", "vâng", "dạ",
+        ]
+        msg_lower = message.lower().strip()
+        
+        # Very short messages are likely greetings
+        if len(msg_lower) < 15:
+            for pattern in simple_patterns:
+                if pattern in msg_lower:
+                    return True
+            # Also check if message is just a single word greeting
+            if msg_lower in simple_patterns:
+                return True
+        
+        return False
+
     async def _plan_tool_calls(
         self,
         message: str,
@@ -278,7 +310,13 @@ class MMCAAgent:
         Analyze message and plan which tools to call.
 
         Returns list of ToolCall objects with tool_name and arguments.
+        Returns empty list for simple greetings (no tools needed).
         """
+        # Early exit for greetings - no tools needed
+        if self._is_greeting_or_simple_query(message) and not image_url:
+            agent_logger.workflow_step("Greeting detected", "Skipping tools")
+            return []
+        
         tool_calls = []
 
         # If image is provided, always use visual search
@@ -342,7 +380,6 @@ class MMCAAgent:
                 tool_name="retrieve_context_text",
                 arguments={"query": message, "limit": 5},
             ))
-
 
         return tool_calls
 
@@ -442,8 +479,39 @@ class MMCAAgent:
         tool_results: list[ToolCall],
         image_url: str | None = None,
         history: str | None = None,
-    ) -> str:
-        """Synthesize final response from tool results with conversation history."""
+    ) -> tuple[str, list[str]]:
+        """
+        Synthesize final response from tool results with conversation history.
+        
+        Returns:
+            Tuple of (response_text, selected_place_ids)
+        """
+        # Collect all available place_ids from tool results
+        all_place_ids = []
+        for tool_call in tool_results:
+            if tool_call.result:
+                for item in tool_call.result:
+                    if isinstance(item, dict) and 'place_id' in item:
+                        all_place_ids.append(item['place_id'])
+        
+        # If no tool results (greeting case), return simple response
+        if not tool_results:
+            # Build history section if available
+            history_section = ""
+            if history:
+                history_section = f"Lịch sử hội thoại:\n{history}\n\n---\n"
+            
+            prompt = f"""{history_section}User nói: "{message}"
+
+Hãy trả lời thân thiện bằng tiếng Việt. Đây là lời chào hoặc tin nhắn đơn giản, không cần tìm kiếm địa điểm."""
+            
+            response = await self.llm_client.generate(
+                prompt=prompt,
+                temperature=0.7,
+                system_instruction="Bạn là LocalMate - trợ lý du lịch thân thiện cho Đà Nẵng. Trả lời ngắn gọn, thân thiện.",
+            )
+            return response, []
+        
         # Build context from tool results
         context_parts = []
         for tool_call in tool_results:
@@ -452,7 +520,7 @@ class MMCAAgent:
                     f"Kết quả từ {tool_call.tool_name}:\n{json.dumps(tool_call.result, ensure_ascii=False, indent=2)}"
                 )
 
-        context = "\n\n".join(context_parts) if context_parts else "Không tìm thấy kết quả phù hợp."
+        context = "\n\n".join(context_parts)
 
         # Build history section if available
         history_section = ""
@@ -463,25 +531,61 @@ class MMCAAgent:
 ---
 """
 
-        # Generate response using LLM
-        prompt = f"""{history_section}Dựa trên kết quả tìm kiếm sau, hãy trả lời câu hỏi của người dùng một cách tự nhiên và hữu ích.
+        # Generate response using LLM with JSON format for place selection
+        prompt = f"""{history_section}Dựa trên kết quả tìm kiếm sau, hãy trả lời câu hỏi của người dùng.
 
 Câu hỏi hiện tại: {message}
 
 {context}
 
-Hãy trả lời bằng tiếng Việt, thân thiện. Nếu có nhiều kết quả, hãy giới thiệu top 2-3 địa điểm phù hợp nhất.
+**QUAN TRỌNG:** Trả lời theo format JSON:
+```json
+{{
+  "response": "Câu trả lời tiếng Việt, thân thiện. Giới thiệu top 2-3 địa điểm phù hợp nhất.",
+  "selected_place_ids": ["place_id_1", "place_id_2", "place_id_3"]
+}}
+```
+
+Chỉ chọn những place_id xuất hiện trong kết quả tìm kiếm ở trên. Nếu không có địa điểm phù hợp, để mảng rỗng.
 Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó khi trả lời."""
 
         agent_logger.llm_call(self.provider, self.model or "default", prompt[:100])
 
-        response = await self.llm_client.generate(
+        raw_response = await self.llm_client.generate(
             prompt=prompt,
             temperature=0.7,
             system_instruction=SYSTEM_PROMPT,
         )
 
-        return response
+        # Parse JSON response
+        try:
+            # Extract JSON from code blocks
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', raw_response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                # Try to find raw JSON
+                json_start = raw_response.find('{')
+                json_end = raw_response.rfind('}')
+                if json_start != -1 and json_end != -1:
+                    json_str = raw_response[json_start:json_end + 1]
+                else:
+                    # No JSON found, return raw response
+                    return raw_response, []
+            
+            data = json.loads(json_str)
+            text_response = data.get("response", raw_response)
+            selected_ids = data.get("selected_place_ids", [])
+            
+            # Validate selected_ids are in available places
+            valid_ids = [pid for pid in selected_ids if pid in all_place_ids]
+            
+            return text_response, valid_ids
+            
+        except (json.JSONDecodeError, KeyError) as e:
+            agent_logger.error("Failed to parse synthesis JSON", e)
+            # Fallback: return raw response with no places
+            return raw_response, []
 
     def _extract_location(self, message: str) -> str | None:
         """Extract location name from message using pattern matching."""

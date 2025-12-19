@@ -1,8 +1,13 @@
-"""MegaLLM client using OpenAI-compatible API with retry logic."""
+"""MegaLLM client using OpenAI-compatible API with retry logic and key rotation."""
+
+import logging
 
 import httpx
 
 from app.core.config import settings
+from app.shared.integrations.key_rotator import megallm_key_rotator
+
+logger = logging.getLogger(__name__)
 
 # Timeout configuration for DeepSeek reasoning models (can take longer)
 REQUEST_TIMEOUT = httpx.Timeout(
@@ -14,13 +19,21 @@ REQUEST_TIMEOUT = httpx.Timeout(
 
 
 class MegaLLMClient:
-    """Client for MegaLLM (OpenAI-compatible API) operations."""
+    """Client for MegaLLM (OpenAI-compatible API) operations with key rotation."""
 
     def __init__(self, model: str | None = None):
         """Initialize with optional model override."""
         self.model = model or settings.default_megallm_model
-        self.api_key = settings.megallm_api_key
         self.base_url = settings.megallm_base_url
+        
+    def _get_api_key(self) -> str:
+        """Get API key using rotation or fallback to settings."""
+        if megallm_key_rotator:
+            return megallm_key_rotator.get_next_key()
+        # Fallback to settings (backward compatibility)
+        if settings.megallm_api_key:
+            return settings.megallm_api_key
+        raise ValueError("No MegaLLM API keys configured")
 
     async def generate(
         self,
@@ -41,8 +54,8 @@ class MegaLLMClient:
         Returns:
             Generated text
         """
-        if not self.api_key:
-            raise ValueError("MEGALLM_API_KEY is not configured")
+        # Get rotated API key
+        api_key = self._get_api_key()
 
         messages = []
         if system_instruction:
@@ -56,7 +69,7 @@ class MegaLLMClient:
                     response = await client.post(
                         f"{self.base_url}/chat/completions",
                         headers={
-                            "Authorization": f"Bearer {self.api_key}",
+                            "Authorization": f"Bearer {api_key}",
                             "Content-Type": "application/json",
                         },
                         json={
@@ -97,8 +110,8 @@ class MegaLLMClient:
         Returns:
             Generated text response
         """
-        if not self.api_key:
-            raise ValueError("MEGALLM_API_KEY is not configured")
+        # Get rotated API key
+        api_key = self._get_api_key()
 
         chat_messages = []
         if system_instruction:
@@ -114,7 +127,7 @@ class MegaLLMClient:
             response = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {self.api_key}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
