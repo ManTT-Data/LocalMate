@@ -19,12 +19,13 @@ const ChatMessage = ({ message }) => {
             <Paper
               p="md"
               radius="lg"
+              className="message-bubble-user"
               style={{
-                borderTopRightRadius: 0,
-                backgroundColor: "var(--neutral-900)",
+                borderTopRightRadius: 4,
+                background: "linear-gradient(135deg, #00bfa6 0%, #0891B2 100%)",
                 color: "white",
+                boxShadow: "0 4px 15px rgba(0, 184, 169, 0.3)",
               }}
-              shadow="sm"
             >
               {/* Text content */}
               {message.content && (
@@ -182,56 +183,47 @@ const ChatMessage = ({ message }) => {
           <Paper
             p="md"
             radius="lg"
+            className="message-bubble-ai"
             style={{
-              borderTopLeftRadius: 0,
-              backgroundColor: "var(--mantine-color-gray-1)",
+              borderTopLeftRadius: 4,
+              background: "rgba(255, 255, 255, 0.95)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(0, 0, 0, 0.06)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
             }}
-            shadow="sm"
           >
             <Box>
               {message.isLoading ? (
                 <Box
-                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <Text size="sm" style={{ lineHeight: 1.6 }}>
+                  <Text size="sm" style={{ lineHeight: 1.6, color: "var(--neutral-600)" }}>
                     {message.content}
                   </Text>
-                  <Box
-                    style={{
-                      display: "inline-flex",
-                      gap: "4px",
-                      animation: "pulse 1.5s ease-in-out infinite",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        backgroundColor: "var(--mantine-color-blue-6)",
-                        animation: "bounce 1.4s infinite ease-in-out both",
-                        animationDelay: "-0.32s",
-                      }}
-                    />
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        backgroundColor: "var(--mantine-color-blue-6)",
-                        animation: "bounce 1.4s infinite ease-in-out both",
-                        animationDelay: "-0.16s",
-                      }}
-                    />
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        backgroundColor: "var(--mantine-color-blue-6)",
-                        animation: "bounce 1.4s infinite ease-in-out both",
-                      }}
-                    />
+                  <Box className="typing-indicator" style={{ padding: 0 }}>
+                    <span className="dot" style={{
+                      width: "8px",
+                      height: "8px",
+                      background: "linear-gradient(135deg, #00bfa6, #0891B2)",
+                      borderRadius: "50%",
+                      animation: "bounce-dot 1.4s ease-in-out infinite",
+                    }} />
+                    <span className="dot" style={{
+                      width: "8px",
+                      height: "8px",
+                      background: "linear-gradient(135deg, #00bfa6, #0891B2)",
+                      borderRadius: "50%",
+                      animation: "bounce-dot 1.4s ease-in-out infinite",
+                      animationDelay: "0.2s",
+                    }} />
+                    <span className="dot" style={{
+                      width: "8px",
+                      height: "8px",
+                      background: "linear-gradient(135deg, #00bfa6, #0891B2)",
+                      borderRadius: "50%",
+                      animation: "bounce-dot 1.4s ease-in-out infinite",
+                      animationDelay: "0.4s",
+                    }} />
                   </Box>
                 </Box>
               ) : (

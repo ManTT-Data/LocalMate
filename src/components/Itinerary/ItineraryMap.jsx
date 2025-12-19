@@ -175,16 +175,31 @@ const ItineraryMap = ({
         />
 
         {routePositions.length > 0 && (
-          <Polyline
-            positions={routePositions}
-            pathOptions={{
-              color: routeColor,
-              weight: routeWeight,
-              opacity: routeOpacity,
-              lineJoin: "round",
-              lineCap: "round",
-            }}
-          />
+          <>
+            {/* Glow Polyline */}
+            <Polyline
+              positions={routePositions}
+              pathOptions={{
+                color: routeColor,
+                weight: routeWeight + 4,
+                opacity: 0.2,
+                lineJoin: "round",
+                lineCap: "round",
+              }}
+            />
+            {/* Animated Main Polyline */}
+            <Polyline
+              positions={routePositions}
+              pathOptions={{
+                className: "route-line-animated",
+                color: routeColor,
+                weight: routeWeight,
+                opacity: routeOpacity,
+                lineJoin: "round",
+                lineCap: "round",
+              }}
+            />
+          </>
         )}
 
         {stopsForRouting.map((stop, index) => {

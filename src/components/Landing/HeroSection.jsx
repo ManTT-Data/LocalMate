@@ -1,10 +1,17 @@
 import React from "react";
 import { Container, Title, Text, Button, Group, Box } from "@mantine/core";
+import { useWindowScroll } from "@mantine/hooks";
 import { useNavigate } from "react-router-dom";
 import { IconPlane, IconCar } from "@tabler/icons-react";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const [scroll] = useWindowScroll();
+
+  const getParallaxOffset = (speed) => {
+    return scroll.y * speed;
+  };
+
 
   const heroImages = [
     {
@@ -30,11 +37,11 @@ const HeroSection = () => {
   ];
 
   return (
-    <Box className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden hero-mesh">
+    <Box className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden animated-mesh-bg">
       <Container size="xl" className="relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center space-x-2 bg-teal-50 text-teal-600 px-3 py-1 rounded-full text-xs font-semibold mb-6">
+          <div className="max-w-2xl animate-fadeIn">
+            <div className="shimmer-badge inline-flex items-center space-x-2 bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-600 px-4 py-2 rounded-full text-xs font-semibold mb-6 border border-teal-100">
               <span className="material-symbols-outlined text-sm">
                 auto_awesome
               </span>
@@ -65,13 +72,16 @@ const HeroSection = () => {
               <Button
                 size="xl"
                 radius="xl"
-                className="bg-teal-500 hover:bg-teal-600 border-0"
+                className="btn-lift"
                 leftSection={<IconPlane size={24} />}
                 onClick={() => navigate("/login")}
                 style={{
-                  boxShadow: "0 10px 20px rgba(20, 184, 166, 0.2)",
+                  background: "linear-gradient(135deg, #00bfa6 0%, #0891B2 100%)",
+                  border: "none",
+                  boxShadow: "0 10px 30px -10px rgba(0, 191, 166, 0.5)",
                   paddingLeft: 32,
                   paddingRight: 32,
+                  transition: "all 0.3s ease",
                 }}
               >
                 I'm a Tourist
@@ -81,13 +91,18 @@ const HeroSection = () => {
                 size="xl"
                 radius="xl"
                 variant="default"
-                className="bg-white hover:bg-gray-50 border-white text-gray-900"
+                className="btn-lift"
                 leftSection={<IconCar size={24} />}
                 onClick={() => navigate("/login")}
                 style={{
-                  boxShadow: "0 10px 20px rgba(0, 0, 0, 0.05)",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                  color: "#171717",
+                  boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.15)",
                   paddingLeft: 32,
                   paddingRight: 32,
+                  transition: "all 0.3s ease",
                 }}
               >
                 I'm a Driver
@@ -123,6 +138,7 @@ const HeroSection = () => {
                   style={{
                     animation: `fadeIn 0.6s ease-out ${heroImages[0].delay}`,
                     boxShadow: "0 20px 40px -10px rgba(0,0,0,0.15)",
+                    transform: `translateY(${48 + getParallaxOffset(-0.1)}px)`,
                   }}
                 >
                   <img
@@ -141,6 +157,7 @@ const HeroSection = () => {
                   style={{
                     animation: `fadeIn 0.6s ease-out ${heroImages[1].delay}`,
                     boxShadow: "0 20px 40px -10px rgba(0,0,0,0.15)",
+                    transform: `translateY(${getParallaxOffset(0.05)}px)`,
                   }}
                 >
                   <img
@@ -157,6 +174,7 @@ const HeroSection = () => {
                   style={{
                     animation: `fadeIn 0.6s ease-out ${heroImages[2].delay}`,
                     boxShadow: "0 20px 40px -10px rgba(0,0,0,0.15)",
+                    transform: `translateY(${getParallaxOffset(-0.08)}px)`,
                   }}
                 >
                   <img
@@ -170,6 +188,7 @@ const HeroSection = () => {
                   style={{
                     animation: `fadeIn 0.6s ease-out ${heroImages[3].delay}`,
                     boxShadow: "0 20px 40px -10px rgba(0,0,0,0.15)",
+                    transform: `translateY(${getParallaxOffset(0.12)}px)`,
                   }}
                 >
                   <img

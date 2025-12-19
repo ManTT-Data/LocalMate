@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, Group, Text, Badge, Button, Box } from "@mantine/core";
+import { Card, Group, Text, Badge, Button, Box, Image, ActionIcon, Tooltip } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
   IconStar,
@@ -10,6 +10,11 @@ import {
   IconBuildingChurch,
   IconCameraFilled,
   IconShoppingBag,
+  IconHeart,
+  IconShare,
+  IconNavigation,
+  IconPlus,
+  IconCheck,
 } from "@tabler/icons-react";
 import {
   createItineraryAPI,
@@ -35,6 +40,19 @@ const getCategoryIcon = (category) => {
   return <IconComponent size={12} />;
 };
 
+// Category color mapping
+const getCategoryColor = (category) => {
+  const colorMap = {
+    restaurant: "#FF6B6B",
+    cafe: "#A0522D",
+    hotel: "#9B5DE5",
+    temple: "#FFD93D",
+    attraction: "#00BBF9",
+    shopping: "#6BCB77",
+  };
+  return colorMap[category?.toLowerCase()] || "#00bfa6";
+};
+
 /**
  * PlaceCard - Display place information extracted from AI response
  * @param {Object} place - Place object with name, category, rating, etc.
@@ -43,6 +61,8 @@ const getCategoryIcon = (category) => {
  */
 const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Access Zustand store to get current itinerary
   const { itineraryItems, setItinerary, currentItinerary } =
@@ -88,7 +108,6 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
         const existingItineraries = await fetchUserItinerariesAPI();
 
         if (existingItineraries && existingItineraries.length > 0) {
-          // Use the first (most recent) itinerary
           itineraryId = existingItineraries[0].id;
           console.log("✅ Using existing itinerary:", itineraryId);
         }
@@ -121,18 +140,18 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
         console.log("✅ Created new itinerary:", itineraryId);
       }
 
-      // Step 3: Calculate order_index based on existing stops in Day 1
+      // Step 3: Calculate order_index based on existing stops
       let orderIndex = 1;
       if (itineraryItems && itineraryItems[0]?.stops) {
         orderIndex = itineraryItems[0].stops.length + 1;
       }
 
-      // Step 4: Prepare stop data for backend
+      // Step 4: Prepare stop data
       const stopData = {
         place_id: place.place_id || place.id,
-        day_index: 1, // Add to Day 1 (1-indexed for backend)
-        order_index: orderIndex, // Sequential order (1-indexed for backend)
-        arrival_time: null, // Will be optimized later
+        day_index: 1,
+        order_index: orderIndex,
+        arrival_time: null,
         stay_minutes: 60,
         notes: "",
         tags: place.tags || [],
@@ -147,43 +166,27 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
         },
       };
 
-      // DEBUG: Log complete place object and stopData
-      console.log("🔍 PLACE OBJECT:", JSON.stringify(place, null, 2));
-      console.log("🔍 STOP DATA TO SEND:", JSON.stringify(stopData, null, 2));
-
-      console.log("🔍 Adding stop to itinerary:", {
-        itineraryId,
-        stopData,
-      });
-
-      // Step 5: Add stop to itinerary using stopService
+      // Step 5: Add stop to itinerary
       const stopResponse = await addStopAPI(itineraryId, stopData);
-
       console.log("✅ Stop added successfully:", stopResponse);
 
-      // Step 6: Refresh itinerary to update UI immediately
+      // Step 6: Refresh itinerary
       try {
         const updatedItinerary = await fetchItineraryByIdAPI(itineraryId);
         if (updatedItinerary?.days) {
           setItinerary(updatedItinerary.days);
-          console.log("✅ Itinerary refreshed, UI updated");
         }
       } catch (refreshError) {
         console.warn("Failed to refresh itinerary:", refreshError);
       }
 
-      // Step 7: Optional - Try to optimize the itinerary route
+      // Step 7: Optional optimization
       try {
         await optimizeItineraryAPI(itineraryId, 1);
-        console.log("✅ Itinerary route optimized");
       } catch (optimizeError) {
-        console.warn(
-          "Optimization failed, but itinerary was created:",
-          optimizeError
-        );
+        console.warn("Optimization failed:", optimizeError);
       }
 
-      // Show success notification
       notifications.show({
         title: "Added to Itinerary",
         message: `${place.name} has been added to your trip!`,
@@ -191,32 +194,14 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
         icon: "✓",
       });
 
-      // Call parent callback
       if (onAddToPlan) {
         onAddToPlan(place);
       }
     } catch (error) {
       console.error("❌ Error adding to itinerary:", error);
-      console.error("❌ Error message:", error.message);
-      console.error("❌ Error response:", error.response);
-      console.error("❌ Error data:", error.response?.data);
-      console.error("❌ Error status:", error.response?.status);
-      console.error("❌ Request config:", error.config);
-      console.error("❌ Request data:", error.config?.data);
 
-      // If detail is an array, log each validation error
-      if (Array.isArray(error.response?.data?.detail)) {
-        console.error("Validation errors:");
-        error.response.data.detail.forEach((err, index) => {
-          console.error(`  ${index + 1}.`, JSON.stringify(err, null, 2));
-        });
-      }
-
-      // Format error message for display
       let errorMessage = "Failed to add place to itinerary";
-
       if (Array.isArray(error.response?.data?.detail)) {
-        // Join all validation error messages
         errorMessage = error.response.data.detail
           .map((err) => err.msg || err.message || JSON.stringify(err))
           .join(", ");
@@ -236,82 +221,230 @@ const PlaceCard = ({ place, onAddToPlan, isAdded = false }) => {
     }
   };
 
+  const handleSave = (e) => {
+    e.stopPropagation();
+    setIsSaved(!isSaved);
+    notifications.show({
+      title: isSaved ? "Removed from saved" : "Saved!",
+      message: isSaved ? `${place.name} removed from favorites` : `${place.name} added to favorites`,
+      color: isSaved ? "gray" : "pink",
+    });
+  };
+
+  const handleShare = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(`Check out ${place.name}!`);
+    notifications.show({
+      title: "Copied!",
+      message: "Link copied to clipboard",
+      color: "teal",
+    });
+  };
+
+  const handleNavigate = (e) => {
+    e.stopPropagation();
+    if (place.lat && place.lng) {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`, "_blank");
+    }
+  };
+
+  const categoryColor = getCategoryColor(place.category);
+
   return (
     <Card
       shadow="sm"
-      padding="md"
-      radius="md"
+      padding={0}
+      radius="lg"
       withBorder
+      className="place-card"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
-        transition: "all 0.2s",
-        cursor: "pointer",
-      }}
-      styles={{
-        root: {
-          "&:hover": {
-            boxShadow: "var(--mantine-shadow-md)",
-            transform: "translateY(-2px)",
-          },
-        },
+        overflow: "hidden",
+        transition: "all 0.3s ease",
+        transform: isHovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: isHovered
+          ? "0 20px 40px -15px rgba(0, 0, 0, 0.2)"
+          : "0 2px 8px rgba(0, 0, 0, 0.08)",
       }}
     >
-      <Group justify="space-between" align="flex-start" wrap="nowrap">
-        <Box flex={1}>
-          <Text fw={600} size="sm" lineClamp={1}>
-            {place.name}
-          </Text>
+      {/* Image Section with Overlay */}
+      {place.image && (
+        <Box pos="relative" style={{ height: 140, overflow: "hidden" }}>
+          <Image
+            src={place.image}
+            alt={place.name}
+            height={140}
+            fit="cover"
+            className="place-card-image"
+            style={{
+              transition: "transform 0.5s ease",
+              transform: isHovered ? "scale(1.08)" : "scale(1)",
+            }}
+          />
 
-          <Group gap="xs" mt={4}>
-            {place.category && (
-              <Badge
-                size="xs"
-                variant="light"
-                color="gray"
-                leftSection={getCategoryIcon(place.category)}
+          {/* Gradient Overlay */}
+          <Box
+            pos="absolute"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            style={{
+              background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)",
+              opacity: isHovered ? 1 : 0.5,
+              transition: "opacity 0.3s ease",
+            }}
+          />
+
+          {/* Quick Action Buttons */}
+          <Group
+            pos="absolute"
+            top={8}
+            right={8}
+            gap={4}
+            style={{
+              opacity: isHovered ? 1 : 0,
+              transform: isHovered ? "translateY(0)" : "translateY(-10px)",
+              transition: "all 0.3s ease",
+            }}
+          >
+            <Tooltip label="Save" withArrow>
+              <ActionIcon
+                variant="filled"
+                color={isSaved ? "pink" : "dark"}
+                radius="xl"
+                size="sm"
+                onClick={handleSave}
+                style={{
+                  background: isSaved ? "#FF6B6B" : "rgba(255,255,255,0.9)",
+                  color: isSaved ? "white" : "#333",
+                }}
               >
-                {place.category}
-              </Badge>
-            )}
-
-            {place.rating && (
-              <Group gap={4}>
-                <IconStar size={14} fill="gold" color="gold" />
-                <Text size="xs" c="dimmed" fw={500}>
-                  {place.rating}
-                </Text>
-              </Group>
+                <IconHeart size={14} fill={isSaved ? "currentColor" : "none"} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Share" withArrow>
+              <ActionIcon
+                variant="filled"
+                radius="xl"
+                size="sm"
+                onClick={handleShare}
+                style={{ background: "rgba(255,255,255,0.9)", color: "#333" }}
+              >
+                <IconShare size={14} />
+              </ActionIcon>
+            </Tooltip>
+            {place.lat && place.lng && (
+              <Tooltip label="Navigate" withArrow>
+                <ActionIcon
+                  variant="filled"
+                  radius="xl"
+                  size="sm"
+                  onClick={handleNavigate}
+                  style={{ background: "rgba(255,255,255,0.9)", color: "#333" }}
+                >
+                  <IconNavigation size={14} />
+                </ActionIcon>
+              </Tooltip>
             )}
           </Group>
 
-          {place.address && (
-            <Text size="xs" c="dimmed" mt={4} lineClamp={1}>
-              {place.address}
-            </Text>
+          {/* Rating Badge */}
+          {place.rating && (
+            <Badge
+              pos="absolute"
+              bottom={8}
+              left={8}
+              variant="filled"
+              color="dark"
+              size="sm"
+              leftSection={<IconStar size={12} fill="gold" color="gold" />}
+              style={{
+                background: "rgba(0,0,0,0.7)",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              {place.rating}
+            </Badge>
           )}
 
-          {!place.address && place.distance_km && (
-            <Text size="xs" c="dimmed" mt={4}>
-              {place.distance_km.toFixed(2)} km away
-            </Text>
-          )}
+          {/* Category Accent */}
+          <Box
+            pos="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            h={3}
+            style={{ background: categoryColor }}
+          />
         </Box>
+      )}
 
-        <Button
-          size="xs"
-          variant={isAdded ? "light" : "filled"}
-          color={isAdded ? "green" : "dark"}
-          onClick={handleAddToItinerary}
-          disabled={isAdded}
-          loading={isAdding}
-          styles={{
-            root: {
-              minWidth: 80,
-            },
-          }}
-        >
-          {isAdded ? "✓ Added" : "+ Add"}
-        </Button>
-      </Group>
+      {/* Content Section */}
+      <Box p="sm">
+        <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+          <Box flex={1} style={{ minWidth: 0 }}>
+            <Text fw={600} size="sm" lineClamp={1}>
+              {place.name}
+            </Text>
+
+            <Group gap={6} mt={4}>
+              {place.category && (
+                <Badge
+                  size="xs"
+                  variant="light"
+                  color="gray"
+                  leftSection={getCategoryIcon(place.category)}
+                  style={{
+                    borderLeft: `2px solid ${categoryColor}`,
+                  }}
+                >
+                  {place.category}
+                </Badge>
+              )}
+
+              {!place.image && place.rating && (
+                <Group gap={4}>
+                  <IconStar size={12} fill="gold" color="gold" />
+                  <Text size="xs" c="dimmed" fw={500}>
+                    {place.rating}
+                  </Text>
+                </Group>
+              )}
+
+              {place.distance_km && (
+                <Text size="xs" c="dimmed">
+                  {place.distance_km.toFixed(1)} km
+                </Text>
+              )}
+            </Group>
+
+            {place.address && (
+              <Text size="xs" c="dimmed" mt={4} lineClamp={1}>
+                {place.address}
+              </Text>
+            )}
+          </Box>
+
+          <Button
+            size="xs"
+            variant={isAdded ? "light" : "filled"}
+            color={isAdded ? "green" : "teal"}
+            onClick={handleAddToItinerary}
+            disabled={isAdded}
+            loading={isAdding}
+            radius="xl"
+            leftSection={isAdded ? <IconCheck size={14} /> : <IconPlus size={14} />}
+            style={{
+              transition: "all 0.2s ease",
+              boxShadow: isAdded ? "none" : "0 4px 12px rgba(0, 191, 166, 0.3)",
+            }}
+          >
+            {isAdded ? "Added" : "Add"}
+          </Button>
+        </Group>
+      </Box>
     </Card>
   );
 };

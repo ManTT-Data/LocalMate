@@ -1,8 +1,9 @@
 import { MantineProvider } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
+import { useRoutes, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
 import appRoutes from "./routes/routes";
-import { useRoutes } from "react-router-dom";
-import { useEffect } from "react";
 import { getCurrentUser } from "./apis/authService";
 import useAuthStore from "./stores/useAuthStore";
 
@@ -10,6 +11,9 @@ import "./App.css";
 
 function App() {
   const setUser = useAuthStore((state) => state.setUser);
+
+  const element = useRoutes(appRoutes);
+  const location = useLocation();
 
   // Restore user session from localStorage on app mount
   useEffect(() => {
@@ -26,7 +30,11 @@ function App() {
 
   return (
     <MantineProvider>
-      <ModalsProvider>{useRoutes(appRoutes)}</ModalsProvider>
+      <ModalsProvider>
+        <AnimatePresence mode="wait">
+          {element && React.cloneElement(element, { key: location.pathname })}
+        </AnimatePresence>
+      </ModalsProvider>
     </MantineProvider>
   );
 }

@@ -10,25 +10,27 @@ export const createCustomIcon = (stop) => {
 
   if (isStart) {
     html = `
-         <div class="relative flex items-center justify-center ">
-            <div class="size-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 shadow-md border-2 border-white dark:border-slate-800">
+         <div class="relative flex items-center justify-center transform -translate-y-1/2">
+            <div class="size-10 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white shadow-xl border-2 border-white overflow-hidden">
                 <span class="material-symbols-outlined text-[20px]">home_pin</span>
             </div>
-            <div class="absolute -bottom-2 bg-white text-white dark:bg-slate-900 px-2 py-0.5 rounded text-[10px] font-bold shadow-md whitespace-nowrap">${
-              stop.locationName || "Start"
-            }</div>
+            <div class="absolute -bottom-1 bg-white dark:bg-slate-900 border border-slate-200 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg whitespace-nowrap text-slate-800 dark:text-white">${stop.locationName || "Start"
+      }</div>
          </div>
         `;
   } else {
     html = `
         <div class="flex flex-col items-center" style="transform: translate(-50%, -100%);">
             <div class="relative flex flex-col items-center">
-                <div class="bg-slate-900 text-white p-1 rounded-lg shadow-lg flex items-center gap-2 hover:scale-110 transition-transform border border-slate-700">
-                     <div class="w-8 h-8 rounded bg-cover bg-center shrink-0" style="background-image: url('${stop.destination?.image}')"></div>
-                     <span class="font-bold text-xs whitespace-nowrap pr-2">${stop.destination?.name}</span>
+                <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl shadow-2xl flex items-center gap-2 hover:scale-110 transition-all duration-300 border border-white/50 dark:border-slate-800">
+                     <div class="w-9 h-9 rounded-xl bg-cover bg-center shrink-0 shadow-inner" style="background-image: url('${stop.destination?.image}')"></div>
+                     <div class="flex flex-col pr-2">
+                        <span class="font-bold text-xs whitespace-nowrap text-slate-800 dark:text-white">${stop.destination?.name}</span>
+                        <span class="text-[9px] text-slate-500 uppercase font-semibold tracking-wider">${stop.destination?.type || 'Destination'}</span>
+                     </div>
                 </div>
                 <!-- Triangle pointer -->
-                <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-slate-900 -mt-[1px]"></div>
+                <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white dark:border-t-slate-900 shadow-xl" style="margin-top: -1px;"></div>
             </div>
         </div>
         `;

@@ -3,27 +3,48 @@ import AiMapView from "../pages/AiMapView";
 import AiItinerary from "../pages/AiItinerary";
 import BookingPage from "../pages/BookingPage";
 import LoginPage from "../pages/LoginPage";
+import PageTransition from "../components/layout/PageTransition";
 
 const appRoutes = [
   {
     path: "/",
-    element: <LandingPage />,
+    element: (
+      <PageTransition>
+        <LandingPage />
+      </PageTransition>
+    ),
   },
   {
     path: "/login",
-    element: <LoginPage />,
+    element: (
+      <PageTransition>
+        <LoginPage />
+      </PageTransition>
+    ),
   },
   {
     path: "/map",
-    element: <AiMapView />,
+    element: (
+      <PageTransition>
+        <AiMapView />
+      </PageTransition>
+    ),
   },
   {
     path: "/ai-itinerary",
-    element: <AiItinerary />,
+    element: (
+      <PageTransition>
+        <AiItinerary />
+      </PageTransition>
+    ),
   },
   {
     path: "/booking",
-    element: <BookingPage />,
+    element: (
+      <PageTransition>
+        <BookingPage />
+      </PageTransition>
+    ),
   },
 ];
 

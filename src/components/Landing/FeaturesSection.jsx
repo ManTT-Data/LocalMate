@@ -1,5 +1,6 @@
 import React from "react";
 import { Container, Title, Text, Anchor } from "@mantine/core";
+import { useIntersection } from "@mantine/hooks";
 import {
   IconMap,
   IconCar,
@@ -8,6 +9,13 @@ import {
 } from "@tabler/icons-react";
 
 const FeaturesSection = () => {
+  const { ref, entry } = useIntersection({
+    root: null,
+    threshold: 0.1,
+  });
+
+  const isVisible = entry?.isIntersecting;
+
   const features = [
     {
       id: "tourists",
@@ -46,13 +54,16 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <div id="features" className="py-20 bg-gray-50">
+    <div id="features" className="py-20 bg-gray-50" ref={ref}>
       <Container size="xl">
         <div className="flex flex-col md:flex-row gap-6">
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <div
               key={feature.id}
-              className="bg-white rounded-2xl p-8 hover:shadow-lg transition-shadow duration-300"
+              className={`bg-white rounded-2xl p-8 hover:shadow-lg transition-shadow duration-300 ${isVisible ? 'reveal-visible' : 'reveal-hidden'}`}
+              style={{
+                animationDelay: `${index * 0.2}s`,
+              }}
             >
               <div
                 className={`w-12 h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-6 ${feature.iconColor}`}

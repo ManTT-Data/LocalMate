@@ -25,7 +25,9 @@ import {
   Tooltip,
   Loader,
   Alert,
+  Drawer,
 } from "@mantine/core";
+import { useMediaQuery, useDisclosure } from "@mantine/hooks";
 import {
   IconShare,
   IconAdjustments,
@@ -41,6 +43,9 @@ const AiItinerary = () => {
   const [itineraryMetadata, setItineraryMetadata] = useState(null);
   const [currentItineraryId, setCurrentItineraryId] = useState(null); // Store itinerary ID for direct stop operations
   const [editModalOpened, setEditModalOpened] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure(false);
+
 
   // Zustand store - unified state management
   const {
@@ -83,9 +88,8 @@ const AiItinerary = () => {
                 firstItinerary.start_date,
                 firstItinerary.end_date
               ),
-              duration: `${firstItinerary.total_days} ${
-                firstItinerary.total_days === 1 ? "day" : "days"
-              }`,
+              duration: `${firstItinerary.total_days} ${firstItinerary.total_days === 1 ? "day" : "days"
+                }`,
             });
 
             // Set itinerary items (transformed days array)
@@ -134,9 +138,8 @@ const AiItinerary = () => {
       "Dec",
     ];
 
-    return `${months[start.getMonth()]} ${start.getDate()} - ${
-      months[end.getMonth()]
-    } ${end.getDate()}`;
+    return `${months[start.getMonth()]} ${start.getDate()} - ${months[end.getMonth()]
+      } ${end.getDate()}`;
   };
 
   /**
@@ -289,108 +292,161 @@ const AiItinerary = () => {
         </Box>
 
         {/* Content Area */}
-        <Flex flex={1} pt={76} h="100%" style={{ overflow: "hidden" }} w="100%">
-          {/* Left Panel: Itinerary List */}
-          <Paper
-            width={450}
-            miw={450}
-            component={Flex}
-            direction="column"
-            shadow="md"
-            radius={0}
-            style={{
-              zIndex: 10,
-              borderRight: "1px solid var(--mantine-color-gray-3)",
-            }}
-          >
-            <Box
-              px="md"
-              py="md"
-              style={{ borderBottom: "1px solid var(--mantine-color-gray-2)" }}
+        <Flex
+          flex={1}
+          pt={76}
+          h="100%"
+          style={{ overflow: "hidden" }}
+          w="100%"
+          direction={isMobile ? "column" : "row"}
+        >
+          {/* Left Panel: Itinerary List or Drawer for Mobile */}
+          {!isMobile ? (
+            <Paper
+              width={450}
+              miw={450}
+              component={Flex}
+              direction="column"
+              shadow="md"
+              radius={0}
+              style={{
+                zIndex: 10,
+                borderRight: "1px solid var(--mantine-color-gray-3)",
+              }}
             >
-              <Flex justify="space-between" align="center">
-                <Box>
-                  <Text size="xl" fw={700}>
-                    {itineraryMetadata?.title || "Loading..."}
-                  </Text>
+              <Box
+                px="md"
+                py="md"
+                style={{ borderBottom: "1px solid var(--mantine-color-gray-2)" }}
+              >
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text size="xl" fw={700}>
+                      {itineraryMetadata?.title || "Loading..."}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {itineraryMetadata?.dateRange || ""}{" "}
+                      {itineraryMetadata?.dateRange && "•"}{" "}
+                      {itineraryMetadata?.duration || ""}
+                    </Text>
+                  </Box>
+                  <Group gap="xs">
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="lg"
+                      onClick={handleEditItinerary}
+                    >
+                      <IconAdjustments size={20} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="lg"
+                      onClick={handleDeleteItinerary}
+                    >
+                      <IconTrash size={20} />
+                    </ActionIcon>
+                  </Group>
+                </Flex>
+              </Box>
+
+              <ItineraryList
+                onItemClick={(item) => console.log("Clicked", item)}
+              />
+
+              <Box
+                p="md"
+                bg="gray.0"
+                style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}
+              >
+                <Group justify="space-between" mb="sm">
                   <Text size="xs" c="dimmed">
-                    {itineraryMetadata?.dateRange || ""}{" "}
-                    {itineraryMetadata?.dateRange && "•"}{" "}
-                    {itineraryMetadata?.duration || ""}
+                    Total Places:{" "}
+                    <Text span fw={700} c="dark">
+                      {plan.items.length}
+                    </Text>
+                  </Text>
+                  {plan.isOptimized && (
+                    <>
+                      <Text size="xs" c="dimmed">
+                        Distance:{" "}
+                        <Text span fw={700} c="dark">
+                          {plan.totalDistanceKm} km
+                        </Text>
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Duration:{" "}
+                        <Text span fw={700} c="dark">
+                          {plan.estimatedDurationMin} min
+                        </Text>
+                      </Text>
+                    </>
+                  )}
+                </Group>
+                <Button
+                  fullWidth
+                  size="md"
+                  radius="xl"
+                  color={plan.isOptimized ? "green" : "dark"}
+                  leftSection={<IconWand size={18} />}
+                  onClick={optimizeRoute}
+                  disabled={plan.items.length === 0}
+                  loading={plan.isOptimizing}
+                >
+                  {plan.isOptimizing
+                    ? "Optimizing..."
+                    : plan.isOptimized
+                      ? "Route Optimized ✓"
+                      : "Optimize Route & Times"}
+                </Button>
+              </Box>
+            </Paper>
+          ) : (
+            <Drawer
+              opened={drawerOpened}
+              onClose={closeDrawer}
+              position="bottom"
+              size="80%"
+              title={itineraryMetadata?.title || "Itinerary"}
+              styles={{
+                content: { borderRadius: "24px 24px 0 0" },
+                header: { padding: "16px 20px" },
+                body: { padding: 0, overflow: "hidden", height: "100%" },
+              }}
+              zIndex={2000}
+            >
+              <Flex direction="column" h="100%">
+                <Box px="md" pb="md">
+                  <Text size="xs" c="dimmed">
+                    {itineraryMetadata?.dateRange || ""} • {itineraryMetadata?.duration || ""}
                   </Text>
                 </Box>
-                <Group gap="xs">
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="lg"
-                    onClick={handleEditItinerary}
+                <Box flex={1} style={{ overflow: "hidden" }}>
+                  <ItineraryList
+                    onItemClick={(item) => {
+                      console.log("Clicked", item);
+                      closeDrawer();
+                    }}
+                  />
+                </Box>
+                <Box p="md" bg="gray.0" style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}>
+                  <Button
+                    fullWidth
+                    size="md"
+                    radius="xl"
+                    color={plan.isOptimized ? "green" : "dark"}
+                    leftSection={<IconWand size={18} />}
+                    onClick={optimizeRoute}
+                    disabled={plan.items.length === 0}
+                    loading={plan.isOptimizing}
                   >
-                    <IconAdjustments size={20} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="lg"
-                    onClick={handleDeleteItinerary}
-                  >
-                    <IconTrash size={20} />
-                  </ActionIcon>
-                </Group>
+                    Optimize
+                  </Button>
+                </Box>
               </Flex>
-            </Box>
-
-            <ItineraryList
-              onItemClick={(item) => console.log("Clicked", item)}
-            />
-
-            <Box
-              p="md"
-              bg="gray.0"
-              style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}
-            >
-              <Group justify="space-between" mb="sm">
-                <Text size="xs" c="dimmed">
-                  Total Places:{" "}
-                  <Text span fw={700} c="dark">
-                    {plan.items.length}
-                  </Text>
-                </Text>
-                {plan.isOptimized && (
-                  <>
-                    <Text size="xs" c="dimmed">
-                      Distance:{" "}
-                      <Text span fw={700} c="dark">
-                        {plan.totalDistanceKm} km
-                      </Text>
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      Duration:{" "}
-                      <Text span fw={700} c="dark">
-                        {plan.estimatedDurationMin} min
-                      </Text>
-                    </Text>
-                  </>
-                )}
-              </Group>
-              <Button
-                fullWidth
-                size="md"
-                radius="xl"
-                color={plan.isOptimized ? "green" : "dark"}
-                leftSection={<IconWand size={18} />}
-                onClick={optimizeRoute}
-                disabled={plan.items.length === 0}
-                loading={plan.isOptimizing}
-              >
-                {plan.isOptimizing
-                  ? "Optimizing..."
-                  : plan.isOptimized
-                  ? "Route Optimized ✓"
-                  : "Optimize Route & Times"}
-              </Button>
-            </Box>
-          </Paper>
+            </Drawer>
+          )}
 
           {/* Right Panel: Map */}
           <Box flex={1} h="100%" pos="relative" bg="gray.1">
@@ -411,6 +467,23 @@ const AiItinerary = () => {
                 />
             */}
             <ItineraryMap dayIndex={0} />
+
+            {/* Mobile Toggle Button */}
+            {isMobile && (
+              <Button
+                pos="absolute"
+                bottom={24}
+                left="50%"
+                style={{ transform: "translateX(-50%)", zIndex: 1000 }}
+                radius="xl"
+                size="md"
+                className="bg-slate-900 border-none shadow-2xl"
+                leftSection={<IconMapPin size={18} />}
+                onClick={toggleDrawer}
+              >
+                View Itinerary
+              </Button>
+            )}
           </Box>
         </Flex>
       </Flex>

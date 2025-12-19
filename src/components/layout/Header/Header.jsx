@@ -26,10 +26,10 @@ const Header = () => {
   // Get current user from auth store
   const currentUser = isAuthenticated
     ? {
-        name: getUserName(),
-        avatar: getUserAvatar(),
-        email: getUserEmail(),
-      }
+      name: getUserName(),
+      avatar: getUserAvatar(),
+      email: getUserEmail(),
+    }
     : null;
 
   return (

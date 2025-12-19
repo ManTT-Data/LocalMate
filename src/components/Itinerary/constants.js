@@ -56,6 +56,7 @@ export const MAP_DEFAULTS = {
 export const DND_TYPES = {
   PLAN_ITEMS: "plan-items",
   STOPS: "stops",
+  DAYS: "days",
 };
 
 // Component Variants
