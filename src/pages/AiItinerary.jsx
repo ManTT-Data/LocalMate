@@ -27,6 +27,7 @@ import {
   Loader,
   Alert,
   Drawer,
+  Skeleton,
 } from "@mantine/core";
 import { useMediaQuery, useDisclosure } from "@mantine/hooks";
 import {
@@ -45,8 +46,8 @@ const AiItinerary = () => {
   const [currentItineraryId, setCurrentItineraryId] = useState(null); // Store itinerary ID for direct stop operations
   const [editModalOpened, setEditModalOpened] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure(false);
-
+  const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] =
+    useDisclosure(false);
 
   // Zustand store - unified state management
   const {
@@ -89,8 +90,9 @@ const AiItinerary = () => {
                 firstItinerary.start_date,
                 firstItinerary.end_date
               ),
-              duration: `${firstItinerary.total_days} ${firstItinerary.total_days === 1 ? "day" : "days"
-                }`,
+              duration: `${firstItinerary.total_days} ${
+                firstItinerary.total_days === 1 ? "day" : "days"
+              }`,
             });
 
             // Set itinerary items (transformed days array)
@@ -139,8 +141,9 @@ const AiItinerary = () => {
       "Dec",
     ];
 
-    return `${months[start.getMonth()]} ${start.getDate()} - ${months[end.getMonth()]
-      } ${end.getDate()}`;
+    return `${months[start.getMonth()]} ${start.getDate()} - ${
+      months[end.getMonth()]
+    } ${end.getDate()}`;
   };
 
   /**
@@ -244,7 +247,13 @@ const AiItinerary = () => {
           style={{ position: "relative", overflow: "hidden", height: "100%" }}
         >
           {/* Content Area Skeleton */}
-          <Flex flex={1} pt={76} h="100%" style={{ overflow: "hidden" }} w="100%">
+          <Flex
+            flex={1}
+            pt={76}
+            h="100%"
+            style={{ overflow: "hidden" }}
+            w="100%"
+          >
             <Paper
               width={450}
               miw={450}
@@ -334,7 +343,9 @@ const AiItinerary = () => {
               <Box
                 px="md"
                 py="md"
-                style={{ borderBottom: "1px solid var(--mantine-color-gray-2)" }}
+                style={{
+                  borderBottom: "1px solid var(--mantine-color-gray-2)",
+                }}
               >
                 <Flex justify="space-between" align="center">
                   <Box>
@@ -414,8 +425,8 @@ const AiItinerary = () => {
                   {plan.isOptimizing
                     ? "Optimizing..."
                     : plan.isOptimized
-                      ? "Route Optimized ✓"
-                      : "Optimize Route & Times"}
+                    ? "Route Optimized ✓"
+                    : "Optimize Route & Times"}
                 </Button>
               </Box>
             </Paper>
@@ -436,7 +447,8 @@ const AiItinerary = () => {
               <Flex direction="column" h="100%">
                 <Box px="md" pb="md">
                   <Text size="xs" c="dimmed">
-                    {itineraryMetadata?.dateRange || ""} • {itineraryMetadata?.duration || ""}
+                    {itineraryMetadata?.dateRange || ""} •{" "}
+                    {itineraryMetadata?.duration || ""}
                   </Text>
                 </Box>
                 <Box flex={1} style={{ overflow: "hidden" }}>
@@ -447,7 +459,11 @@ const AiItinerary = () => {
                     }}
                   />
                 </Box>
-                <Box p="md" bg="gray.0" style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}>
+                <Box
+                  p="md"
+                  bg="gray.0"
+                  style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}
+                >
                   <Button
                     fullWidth
                     size="md"
