@@ -36,7 +36,7 @@ REQUEST_TIMEOUT = 60        # Timeout for each API request
 # PROVIDER = "MegaLLM"
 # MODEL = "deepseek-ai/deepseek-v3.1-terminus"
 PROVIDER = "Google"
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3-flash-preview"
 
 # =============================================================================
 # 5 TEST CASES - Covering ALL tools
