@@ -358,14 +358,13 @@ const ChatPanel = ({
 
   return (
     <Box
-      w={{ base: "100%", md: 420, lg: 480 }}
       style={{
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         borderRight: "1px solid var(--mantine-color-gray-3)",
         backgroundColor: "white",
-        position: "relative",
-        flexShrink: 0,
       }}
     >
       {/* Chat Controls Header */}

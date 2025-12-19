@@ -29,6 +29,7 @@ import {
   Drawer,
   Skeleton,
 } from "@mantine/core";
+import { Splitter } from "antd";
 import { useMediaQuery, useDisclosure } from "@mantine/hooks";
 import {
   IconShare,
@@ -328,108 +329,150 @@ const AiItinerary = () => {
         >
           {/* Left Panel: Itinerary List or Drawer for Mobile */}
           {!isMobile ? (
-            <Paper
-              width={450}
-              miw={450}
-              component={Flex}
-              direction="column"
-              shadow="md"
-              radius={0}
-              style={{
-                zIndex: 10,
-                borderRight: "1px solid var(--mantine-color-gray-3)",
-              }}
-            >
-              <Box
-                px="md"
-                py="md"
-                style={{
-                  borderBottom: "1px solid var(--mantine-color-gray-2)",
-                }}
+            <Splitter style={{ flex: 1, height: "100%" }}>
+              {/* Left Panel: Itinerary List */}
+              <Splitter.Panel
+                defaultSize="35%"
+                min="25%"
+                max="60%"
+                style={{ overflow: "hidden" }}
               >
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text size="xl" fw={700}>
-                      {itineraryMetadata?.title || "Loading..."}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {itineraryMetadata?.dateRange || ""}{" "}
-                      {itineraryMetadata?.dateRange && "•"}{" "}
-                      {itineraryMetadata?.duration || ""}
-                    </Text>
-                  </Box>
-                  <Group gap="xs">
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="lg"
-                      onClick={handleEditItinerary}
-                    >
-                      <IconAdjustments size={20} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="lg"
-                      onClick={handleDeleteItinerary}
-                    >
-                      <IconTrash size={20} />
-                    </ActionIcon>
-                  </Group>
-                </Flex>
-              </Box>
-
-              <ItineraryList
-                onItemClick={(item) => console.log("Clicked", item)}
-              />
-
-              <Box
-                p="md"
-                bg="gray.0"
-                style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}
-              >
-                <Group justify="space-between" mb="sm">
-                  <Text size="xs" c="dimmed">
-                    Total Places:{" "}
-                    <Text span fw={700} c="dark">
-                      {plan.items.length}
-                    </Text>
-                  </Text>
-                  {plan.isOptimized && (
-                    <>
-                      <Text size="xs" c="dimmed">
-                        Distance:{" "}
-                        <Text span fw={700} c="dark">
-                          {plan.totalDistanceKm} km
-                        </Text>
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Duration:{" "}
-                        <Text span fw={700} c="dark">
-                          {plan.estimatedDurationMin} min
-                        </Text>
-                      </Text>
-                    </>
-                  )}
-                </Group>
-                <Button
-                  fullWidth
-                  size="md"
-                  radius="xl"
-                  color={plan.isOptimized ? "green" : "dark"}
-                  leftSection={<IconWand size={18} />}
-                  onClick={optimizeRoute}
-                  disabled={plan.items.length === 0}
-                  loading={plan.isOptimizing}
+                <Paper
+                  component={Flex}
+                  direction="column"
+                  shadow="md"
+                  radius={0}
+                  style={{
+                    height: "100%",
+                    width: "100%",
+                    zIndex: 10,
+                    borderRight: "1px solid var(--mantine-color-gray-3)",
+                  }}
                 >
-                  {plan.isOptimizing
-                    ? "Optimizing..."
-                    : plan.isOptimized
-                    ? "Route Optimized ✓"
-                    : "Optimize Route & Times"}
-                </Button>
-              </Box>
-            </Paper>
+                  <Box
+                    px="md"
+                    py="md"
+                    style={{
+                      borderBottom: "1px solid var(--mantine-color-gray-2)",
+                    }}
+                  >
+                    <Flex justify="space-between" align="center">
+                      <Box>
+                        <Text size="xl" fw={700}>
+                          {itineraryMetadata?.title || "Loading..."}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {itineraryMetadata?.dateRange || ""}{" "}
+                          {itineraryMetadata?.dateRange && "•"}{" "}
+                          {itineraryMetadata?.duration || ""}
+                        </Text>
+                      </Box>
+                      <Group gap="xs">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="lg"
+                          onClick={handleEditItinerary}
+                        >
+                          <IconAdjustments size={20} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="lg"
+                          onClick={handleDeleteItinerary}
+                        >
+                          <IconTrash size={20} />
+                        </ActionIcon>
+                      </Group>
+                    </Flex>
+                  </Box>
+
+                  <ItineraryList
+                    onItemClick={(item) => console.log("Clicked", item)}
+                  />
+
+                  <Box
+                    p="md"
+                    bg="gray.0"
+                    style={{
+                      borderTop: "1px solid var(--mantine-color-gray-3)",
+                    }}
+                  >
+                    <Group justify="space-between" mb="sm">
+                      <Text size="xs" c="dimmed">
+                        Total Places:{" "}
+                        <Text span fw={700} c="dark">
+                          {plan.items.length}
+                        </Text>
+                      </Text>
+                      {plan.isOptimized && (
+                        <>
+                          <Text size="xs" c="dimmed">
+                            Distance:{" "}
+                            <Text span fw={700} c="dark">
+                              {plan.totalDistanceKm} km
+                            </Text>
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Duration:{" "}
+                            <Text span fw={700} c="dark">
+                              {plan.estimatedDurationMin} min
+                            </Text>
+                          </Text>
+                        </>
+                      )}
+                    </Group>
+                    <Button
+                      fullWidth
+                      size="md"
+                      radius="xl"
+                      color={plan.isOptimized ? "green" : "dark"}
+                      leftSection={<IconWand size={18} />}
+                      onClick={optimizeRoute}
+                      disabled={plan.items.length === 0}
+                      loading={plan.isOptimizing}
+                    >
+                      {plan.isOptimizing
+                        ? "Optimizing..."
+                        : plan.isOptimized
+                        ? "Route Optimized ✓"
+                        : "Optimize Route & Times"}
+                    </Button>
+                  </Box>
+                </Paper>
+              </Splitter.Panel>
+
+              {/* Right Panel: Map */}
+              <Splitter.Panel style={{ overflow: "hidden" }}>
+                <Box
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    position: "relative",
+                    backgroundColor: "var(--mantine-color-gray-1)",
+                  }}
+                >
+                  {/* ItineraryMap accepts optional props to customize:
+                      - center: [lat, lng] - Map center coordinates (default: Da Nang center)
+                      - zoom: number - Initial zoom level (default: 13)
+                      - routeColor: string - Route line color (default: "#3b82f6")
+                      - routeWeight: number - Route line thickness (default: 5)
+                      - routeOpacity: number - Route line opacity (default: 0.8)
+                      
+                      Example:
+                      <ItineraryMap 
+                        stops={currentItinerary.stops}
+                        center={[16.0544, 108.2022]}
+                        zoom={14}
+                        routeColor="#10b981"
+                        routeWeight={6}
+                      />
+                  */}
+                  <ItineraryMap dayIndex={0} />
+                </Box>
+              </Splitter.Panel>
+            </Splitter>
           ) : (
             <Drawer
               opened={drawerOpened}
@@ -481,28 +524,12 @@ const AiItinerary = () => {
             </Drawer>
           )}
 
-          {/* Right Panel: Map */}
-          <Box flex={1} h="100%" pos="relative" bg="gray.1">
-            {/* ItineraryMap accepts optional props to customize:
-                - center: [lat, lng] - Map center coordinates (default: Da Nang center)
-                - zoom: number - Initial zoom level (default: 13)
-                - routeColor: string - Route line color (default: "#3b82f6")
-                - routeWeight: number - Route line thickness (default: 5)
-                - routeOpacity: number - Route line opacity (default: 0.8)
-                
-                Example:
-                <ItineraryMap 
-                  stops={currentItinerary.stops}
-                  center={[16.0544, 108.2022]}
-                  zoom={14}
-                  routeColor="#10b981"
-                  routeWeight={6}
-                />
-            */}
-            <ItineraryMap dayIndex={0} />
+          {/* Mobile Map - Always visible on mobile */}
+          {isMobile && (
+            <Box flex={1} h="100%" pos="relative" bg="gray.1">
+              <ItineraryMap dayIndex={0} />
 
-            {/* Mobile Toggle Button */}
-            {isMobile && (
+              {/* Mobile Toggle Button */}
               <Button
                 pos="absolute"
                 bottom={24}
@@ -516,8 +543,8 @@ const AiItinerary = () => {
               >
                 View Itinerary
               </Button>
-            )}
-          </Box>
+            </Box>
+          )}
         </Flex>
       </Flex>
 

@@ -65,7 +65,7 @@ const CTASection = () => {
                 variant="outline"
                 c="white"
                 className="border-2 border-white/20 backdrop-blur-sm hover:bg-white/10"
-                onClick={() => navigate("/map")}
+                onClick={() => navigate("/login")}
               >
                 Try Web Version
               </Button>

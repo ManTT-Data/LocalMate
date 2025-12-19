@@ -197,33 +197,45 @@ const ChatMessage = ({ message }) => {
                 <Box
                   style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <Text size="sm" style={{ lineHeight: 1.6, color: "var(--neutral-600)" }}>
+                  <Text
+                    size="sm"
+                    style={{ lineHeight: 1.6, color: "var(--neutral-600)" }}
+                  >
                     {message.content}
                   </Text>
                   <Box className="typing-indicator" style={{ padding: 0 }}>
-                    <span className="dot" style={{
-                      width: "8px",
-                      height: "8px",
-                      background: "linear-gradient(135deg, #00bfa6, #0891B2)",
-                      borderRadius: "50%",
-                      animation: "bounce-dot 1.4s ease-in-out infinite",
-                    }} />
-                    <span className="dot" style={{
-                      width: "8px",
-                      height: "8px",
-                      background: "linear-gradient(135deg, #00bfa6, #0891B2)",
-                      borderRadius: "50%",
-                      animation: "bounce-dot 1.4s ease-in-out infinite",
-                      animationDelay: "0.2s",
-                    }} />
-                    <span className="dot" style={{
-                      width: "8px",
-                      height: "8px",
-                      background: "linear-gradient(135deg, #00bfa6, #0891B2)",
-                      borderRadius: "50%",
-                      animation: "bounce-dot 1.4s ease-in-out infinite",
-                      animationDelay: "0.4s",
-                    }} />
+                    <span
+                      className="dot"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        background: "linear-gradient(135deg, #00bfa6, #0891B2)",
+                        borderRadius: "50%",
+                        animation: "bounce-dot 1.4s ease-in-out infinite",
+                      }}
+                    />
+                    <span
+                      className="dot"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        background: "linear-gradient(135deg, #00bfa6, #0891B2)",
+                        borderRadius: "50%",
+                        animation: "bounce-dot 1.4s ease-in-out infinite",
+                        animationDelay: "0.2s",
+                      }}
+                    />
+                    <span
+                      className="dot"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        background: "linear-gradient(135deg, #00bfa6, #0891B2)",
+                        borderRadius: "50%",
+                        animation: "bounce-dot 1.4s ease-in-out infinite",
+                        animationDelay: "0.4s",
+                      }}
+                    />
                   </Box>
                 </Box>
               ) : (
@@ -238,24 +250,22 @@ const ChatMessage = ({ message }) => {
                 />
               )}
 
-              {/* Workflow info if available */}
-              {message.workflow && (
-                <Box
-                  mt="sm"
-                  p="xs"
+              {/* Workflow/Tools info if available */}
+              {(message.workflow || message.toolsUsed) && (
+                <Text
+                  mt="xs"
                   style={{
-                    backgroundColor: "var(--mantine-color-gray-0)",
-                    borderRadius: "4px",
-                    fontSize: "0.75rem",
+                    fontSize: "11px",
+                    color: "#888",
+                    opacity: 0.6,
+                    fontStyle: "italic",
                   }}
                 >
-                  <Text size="xs" c="dimmed">
-                    🔧 Tools:{" "}
-                    {message.workflow.tools_used?.join(", ") ||
-                      message.toolsUsed?.join(", ") ||
-                      "N/A"}
-                  </Text>
-                </Box>
+                  🔧 Tools used:{" "}
+                  {message.workflow?.tools_used?.join(", ") ||
+                    message.toolsUsed?.join(", ") ||
+                    "N/A"}
+                </Text>
               )}
             </Box>
           </Paper>

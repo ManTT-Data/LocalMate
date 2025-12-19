@@ -65,9 +65,7 @@ const DestinationsGrid = () => {
             className="hidden sm:flex items-center hover:text-teal-700 transition-colors text-sm "
           >
             <span className="inline-flex items-center gap-1">
-              <a href="#" className="text-teal-600 hover:underline">
-                View all destinations
-              </a>
+              View all destinations
               <span className="material-symbols-outlined ml-1 text-base">
                 arrow_right_alt
               </span>

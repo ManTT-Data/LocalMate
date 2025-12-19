@@ -113,8 +113,9 @@ const MapPanel = () => {
 
   return (
     <Box
-      flex={1}
       style={{
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         backgroundColor: "var(--mantine-color-gray-1)",
@@ -285,7 +286,7 @@ const MapPanel = () => {
                 }}
               />
               <GrabBookingWidget onClose={handleCloseCards} />
-              <HotelBookingWidget onClose={handleCloseCards} />
+              {/* <HotelBookingWidget onClose={handleCloseCards} /> */}
             </Stack>
           </Box>
         )}

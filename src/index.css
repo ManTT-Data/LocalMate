@@ -32,3 +32,21 @@
     opacity: 0.5;
   }
 }
+
+/* Ant Design Splitter styling */
+.ant-splitter-bar {
+  background-color: #e9ecef !important;
+  transition: background-color 0.2s ease;
+}
+
+.ant-splitter-bar:hover {
+  background-color: #4dabf7 !important;
+}
+
+.ant-splitter-bar-dragger {
+  background-color: transparent !important;
+}
+
+.ant-splitter {
+  background-color: transparent !important;
+}

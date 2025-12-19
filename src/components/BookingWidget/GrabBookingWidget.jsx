@@ -8,6 +8,9 @@ import {
   Avatar,
   ActionIcon,
   Collapse,
+  Modal,
+  Image,
+  Stack,
 } from "@mantine/core";
 import {
   IconArrowRight,
@@ -16,9 +19,11 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { grabBooking } from "../../data/mockData";
+import grabQR from "../../assets/grabQR.png";
 
 const GrabBookingWidget = ({ onClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [qrModalOpened, setQrModalOpened] = useState(false);
 
   return (
     <Paper
@@ -149,12 +154,48 @@ const GrabBookingWidget = ({ onClose }) => {
             transition: "all 0.2s",
           }}
           onClick={() => {
-            window.open(grabBooking.bookingUrl, "_blank");
+            setQrModalOpened(true);
           }}
         >
           Book Grab Now
         </Button>
       </Collapse>
+
+      {/* QR Code Modal */}
+      <Modal
+        opened={qrModalOpened}
+        onClose={() => setQrModalOpened(false)}
+        title="Quét mã QR để đặt Grab"
+        centered
+        size="md"
+        radius="lg"
+        zIndex={10000}
+      >
+        <Stack align="center" gap="md" p="md">
+          <Text size="sm" c="dimmed" ta="center">
+            Mở ứng dụng Grab và quét mã QR này để đặt xe
+          </Text>
+          <Image
+            src={grabQR}
+            alt="Grab QR Code"
+            fit="contain"
+            style={{
+              maxWidth: "100%",
+              height: "auto",
+            }}
+          />
+          <Text size="xs" c="dimmed" ta="center">
+            {grabBooking.carType} - {grabBooking.price}
+          </Text>
+          <Button
+            fullWidth
+            onClick={() => setQrModalOpened(false)}
+            variant="default"
+          >
+            Đóng
+          </Button>
+        </Stack>
+      </Modal>
     </Paper>
   );
 };

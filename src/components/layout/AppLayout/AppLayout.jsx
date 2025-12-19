@@ -1,5 +1,6 @@
 import React from "react";
-import { AppShell, Flex } from "@mantine/core";
+import { AppShell } from "@mantine/core";
+import { Splitter } from "antd";
 import Header from "../Header/Header";
 import ChatPanel from "../../ChatPanel/ChatPanel";
 
@@ -25,13 +26,24 @@ const AppLayout = ({ children }) => {
       </AppShell.Header>
 
       <AppShell.Main>
-        <Flex h="100%" style={{ overflow: "hidden" }}>
+        <Splitter
+          style={{ height: "100%", boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)" }}
+        >
           {/* Left Panel: Chat */}
-          <ChatPanel onSendMessage={handleSendMessage} />
+          <Splitter.Panel
+            defaultSize="30%"
+            min="20%"
+            max="50%"
+            style={{ overflow: "hidden" }}
+          >
+            <ChatPanel onSendMessage={handleSendMessage} />
+          </Splitter.Panel>
 
           {/* Right Panel: Content */}
-          {children}
-        </Flex>
+          <Splitter.Panel style={{ overflow: "hidden" }}>
+            {children}
+          </Splitter.Panel>
+        </Splitter>
       </AppShell.Main>
     </AppShell>
   );

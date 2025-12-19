@@ -20,6 +20,7 @@
     "@react-oauth/google": "^0.12.2",
     "@tabler/icons-react": "^3.35.0",
     "@tailwindcss/vite": "^4.1.18",
+    "antd": "^6.1.1",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
