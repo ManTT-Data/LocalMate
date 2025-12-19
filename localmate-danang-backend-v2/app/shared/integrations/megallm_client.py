@@ -1,5 +1,6 @@
 """MegaLLM client using OpenAI-compatible API with retry logic and key rotation."""
 
+import asyncio
 import logging
 
 import httpx
@@ -16,6 +17,10 @@ REQUEST_TIMEOUT = httpx.Timeout(
     write=30.0,        # Write timeout
     pool=30.0,         # Pool timeout
 )
+
+# Rate limit configuration
+MAX_429_RETRIES = 3
+INITIAL_BACKOFF_SECONDS = 2
 
 
 class MegaLLMClient:
@@ -54,16 +59,18 @@ class MegaLLMClient:
         Returns:
             Generated text
         """
-        # Get rotated API key
-        api_key = self._get_api_key()
-
         messages = []
         if system_instruction:
             messages.append({"role": "system", "content": system_instruction})
         messages.append({"role": "user", "content": prompt})
 
         last_error = None
+        rate_limit_retries = 0
+        
         for attempt in range(max_retries + 1):
+            # Get rotated API key (get new key on each attempt for rate limit issues)
+            api_key = self._get_api_key()
+            
             try:
                 async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
                     response = await client.post(
@@ -78,13 +85,34 @@ class MegaLLMClient:
                             "temperature": temperature,
                         },
                     )
+                    
+                    # Handle 429 Rate Limit with exponential backoff
+                    if response.status_code == 429:
+                        rate_limit_retries += 1
+                        if rate_limit_retries <= MAX_429_RETRIES:
+                            wait_time = INITIAL_BACKOFF_SECONDS * (2 ** (rate_limit_retries - 1))
+                            logger.warning(
+                                f"[MegaLLM] 429 Rate Limit hit, retry {rate_limit_retries}/{MAX_429_RETRIES} "
+                                f"after {wait_time}s"
+                            )
+                            await asyncio.sleep(wait_time)
+                            continue
+                        else:
+                            # Max retries exceeded, raise the error
+                            response.raise_for_status()
+                    
                     response.raise_for_status()
                     data = response.json()
                     return data["choices"][0]["message"]["content"]
+                    
             except httpx.ReadTimeout as e:
                 last_error = e
                 if attempt < max_retries:
-                    continue  # Retry
+                    logger.warning(f"[MegaLLM] Timeout, retry {attempt + 1}/{max_retries}")
+                    continue
+                raise
+            except httpx.HTTPStatusError as e:
+                # Re-raise HTTP errors (including 429 after max retries)
                 raise
             except Exception as e:
                 last_error = e

@@ -12,6 +12,7 @@ import json
 import re
 from typing import Any
 
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.state import AgentState, ReActStep
@@ -160,7 +161,15 @@ class ReActAgent:
             final_response = f"Xin lỗi, đã xảy ra lỗi: {state.error}"
             selected_place_ids = []
         else:
-            final_response, selected_place_ids = await self._synthesize(state, history)
+            try:
+                final_response, selected_place_ids = await self._synthesize(state, history)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    agent_logger.error("ReAct synthesis failed due to rate limit", e)
+                    final_response = "Xin lỗi, hệ thống đang quá tải. Vui lòng thử lại sau ít phút."
+                    selected_place_ids = []
+                else:
+                    raise
         
         state.final_answer = final_response
         state.selected_place_ids = selected_place_ids  # Store for later enrichment

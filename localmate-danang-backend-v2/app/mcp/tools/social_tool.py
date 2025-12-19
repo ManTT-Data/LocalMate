@@ -4,6 +4,9 @@ import httpx
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
+from dotenv import load_dotenv
+load_dotenv()  # Ensure .env is loaded before os.getenv()
+
 @dataclass
 class SocialSearchResult:
     title: str

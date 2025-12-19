@@ -27,9 +27,9 @@ USER_ID = "test_comprehensive"
 
 # Delay Settings (in seconds)
 SINGLE_MODE_DELAY = 5        # Delay between queries in single mode
-REACT_MODE_DELAY = 10        # Delay between queries in ReAct mode
+REACT_MODE_DELAY = 20        # Delay between queries in ReAct mode
 MODE_SWITCH_DELAY = 5        # Delay between switching modes
-REQUEST_TIMEOUT = 120        # Timeout for each API request
+REQUEST_TIMEOUT = 60        # Timeout for each API request
 
 # Provider settings
 PROVIDER = "MegaLLM"
