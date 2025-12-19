@@ -1,0 +1,110 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.bookings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  itinerary_id uuid,
+  stop_id uuid,
+  provider text NOT NULL,
+  type text NOT NULL,
+  external_id text NOT NULL,
+  status text NOT NULL DEFAULT 'pending'::text,
+  price numeric,
+  currency text NOT NULL DEFAULT 'VND'::text,
+  place_id text,
+  raw_request jsonb,
+  raw_response jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT bookings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
+  CONSTRAINT bookings_itinerary_id_fkey FOREIGN KEY (itinerary_id) REFERENCES public.itineraries(id),
+  CONSTRAINT bookings_stop_id_fkey FOREIGN KEY (stop_id) REFERENCES public.itinerary_stops(id)
+);
+CREATE TABLE public.itineraries (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  start_date date,
+  end_date date,
+  total_days integer NOT NULL CHECK (total_days >= 1),
+  total_budget numeric,
+  currency text NOT NULL DEFAULT 'VND'::text,
+  meta jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT itineraries_pkey PRIMARY KEY (id),
+  CONSTRAINT itineraries_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.itinerary_stops (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  itinerary_id uuid NOT NULL,
+  day_index integer NOT NULL CHECK (day_index >= 1),
+  order_index integer NOT NULL CHECK (order_index >= 1),
+  place_id text NOT NULL,
+  arrival_time timestamp with time zone,
+  stay_minutes integer,
+  notes text,
+  tags ARRAY,
+  snapshot jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT itinerary_stops_pkey PRIMARY KEY (id),
+  CONSTRAINT itinerary_stops_itinerary_id_fkey FOREIGN KEY (itinerary_id) REFERENCES public.itineraries(id)
+);
+CREATE TABLE public.place_image_embeddings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  place_id text NOT NULL,
+  embedding USER-DEFINED,
+  image_url text,
+  metadata jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT place_image_embeddings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.place_text_embeddings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  place_id text NOT NULL,
+  embedding USER-DEFINED,
+  content_type text,
+  source_text text,
+  metadata jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT place_text_embeddings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.places_metadata (
+  place_id text NOT NULL,
+  name text NOT NULL,
+  name_vi text,
+  category text,
+  address text,
+  rating numeric,
+  price_min numeric,
+  price_max numeric,
+  tags ARRAY DEFAULT '{}'::text[],
+  coordinates USER-DEFINED,
+  raw_data jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT places_metadata_pkey PRIMARY KEY (place_id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  full_name text NOT NULL DEFAULT ''::text,
+  phone text,
+  role text NOT NULL DEFAULT 'tourist'::text CHECK (role = ANY (ARRAY['tourist'::text, 'driver'::text, 'admin'::text])),
+  locale text NOT NULL DEFAULT 'vi_VN'::text,
+  avatar_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.spatial_ref_sys (
+  srid integer NOT NULL CHECK (srid > 0 AND srid <= 998999),
+  auth_name character varying,
+  auth_srid integer,
+  srtext character varying,
+  proj4text character varying,
+  CONSTRAINT spatial_ref_sys_pkey PRIMARY KEY (srid)
+);

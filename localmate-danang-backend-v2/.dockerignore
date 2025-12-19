@@ -1,0 +1,35 @@
+# Ignore virtual environment
+.venv/
+venv/
+env/
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore environment files (secrets in HF Settings)
+.env
+.env.*
+
+# Ignore Python cache
+*.pyc
+*.pyo
+__pycache__/
+*.egg-info/
+.eggs/
+
+# Ignore tests and docs
+tests/
+docs/
+DEPLOYMENT.md
+
+# Ignore IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore local files
+*.log
+*.sqlite
+.DS_Store
