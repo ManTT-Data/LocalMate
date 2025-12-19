@@ -73,49 +73,12 @@ class PlaceDetails:
     same_category: list[dict[str, Any]] = field(default_factory=list)
 
 
-# Available categories in Neo4j
-AVAILABLE_CATEGORIES = [
-    "Asian restaurant", "Athletic club", "Badminton court", "Bakery", "Bar",
-    "Bistro", "Board game club", "Breakfast restaurant", "Cafe",
-    "Cantonese restaurant", "Chicken restaurant", "Chinese restaurant",
-    "Cocktail bar", "Coffee shop", "Country food restaurant", "Deli",
-    "Dessert shop", "Disco club", "Dumpling restaurant", "Espresso bar",
-    "Family restaurant", "Fine dining restaurant", "Fitness center",
-    "Food court", "French restaurant", "Game store", "Gym",
-    "Hamburger restaurant", "Holiday apartment rental", "Hot pot restaurant",
-    "Hotel", "Ice cream shop", "Indian restaurant", "Irish pub",
-    "Italian restaurant", "Izakaya restaurant", "Japanese restaurant",
-    "Korean barbecue restaurant", "Korean restaurant", "Live music bar",
-    "Malaysian restaurant", "Mexican restaurant", "Movie theater",
-    "Musical club", "Noodle shop", "Pho restaurant", "Pickleball court",
-    "Pizza restaurant", "Ramen restaurant", "Restaurant", "Restaurant or cafe",
-    "Rice cake shop", "Sandwich shop", "Seafood restaurant", "Soccer field",
-    "Soup shop", "Sports bar", "Sports club", "Sports complex", "Steak house",
-    "Sushi restaurant", "Takeout Restaurant", "Tennis court", "Tiffin center",
-    "Udon noodle restaurant", "Vegan restaurant", "Vegetarian restaurant",
-    "Vietnamese restaurant",
-]
+# Available categories in Neo4j - imported from centralized prompts
+from app.shared.prompts import AVAILABLE_CATEGORIES
 
 
-# Tool definition for agent
-TOOL_DEFINITION = {
-    "name": "find_nearby_places",
-    "description": """Tìm địa điểm gần một vị trí hoặc lấy chi tiết địa điểm.
-
-Dùng khi:
-- Người dùng hỏi về vị trí, khoảng cách, "gần đây", "gần X"
-- Cần tìm quán xung quanh một landmark (Cầu Rồng, Mỹ Khê, Bà Nà)
-- Lấy chi tiết đầy đủ về một địa điểm cụ thể
-
-Categories: Restaurant, Coffee shop, Cafe, Bar, Hotel, Seafood restaurant, 
-Japanese restaurant, Korean restaurant, Gym, Fitness center, v.v.""",
-    "parameters": {
-        "location": "Tên địa điểm trung tâm (VD: 'Bãi biển Mỹ Khê', 'Cầu Rồng')",
-        "category": "Loại địa điểm: restaurant, coffee, hotel, bar, seafood, gym, etc.",
-        "max_distance_km": "Khoảng cách tối đa tính theo km (mặc định 5)",
-        "limit": "Số kết quả tối đa (mặc định 10)",
-    },
-}
+# Tool definition for agent - imported from centralized prompts
+from app.shared.prompts import FIND_NEARBY_PLACES_TOOL as TOOL_DEFINITION
 
 
 async def find_nearby_places(

@@ -37,7 +37,7 @@ from app.mcp.tools.graph_tool import (
 from app.mcp.tools.social_tool import (
     SocialSearchResult,
     search_social_media,
-    # TODO: Define TOOL_DEFINITION in social_tool if needed for agent JSON schema
+    TOOL_DEFINITION as SOCIAL_TOOL_DEFINITION,
 )
 
 
@@ -47,6 +47,7 @@ TOOL_DEFINITIONS = [
     TEXT_TOOL_DEFINITION,
     VISUAL_TOOL_DEFINITION,
     GRAPH_TOOL_DEFINITION,
+    SOCIAL_TOOL_DEFINITION,
 ]
 
 

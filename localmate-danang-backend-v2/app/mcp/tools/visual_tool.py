@@ -27,22 +27,8 @@ class ImageSearchResult:
     matched_images: int = 1
     image_url: str = ""
 
-
-# Tool definition for agent
-TOOL_DEFINITION = {
-    "name": "retrieve_similar_visuals",
-    "description": """Tìm địa điểm có hình ảnh tương tự.
-
-Dùng khi:
-- Người dùng gửi ảnh và muốn tìm nơi tương tự
-- Mô tả về không gian, decor, view
-- "Tìm quán có view như này", "Nơi nào có không gian giống ảnh này"
-""",
-    "parameters": {
-        "image_url": "URL của ảnh cần tìm kiếm tương tự",
-        "limit": "Số kết quả tối đa (mặc định 10)",
-    },
-}
+# Tool definition for agent - imported from centralized prompts
+from app.shared.prompts import RETRIEVE_SIMILAR_VISUALS_TOOL as TOOL_DEFINITION
 
 
 async def retrieve_similar_visuals(

@@ -27,49 +27,12 @@ class TextSearchResult:
     source_text: str = ""
     content_type: str = ""
 
-
-# Category keywords for intent detection
-CATEGORY_KEYWORDS = {
-    'cafe': ['cafe', 'cà phê', 'coffee', 'caphe', 'caphê'],
-    'pho': ['phở', 'pho'],
-    'banh_mi': ['bánh mì', 'banh mi', 'bread'],
-    'seafood': ['hải sản', 'hai san', 'seafood', 'cá', 'tôm', 'cua'],
-    'restaurant': ['nhà hàng', 'restaurant', 'quán ăn', 'ăn'],
-    'bar': ['bar', 'pub', 'cocktail', 'beer', 'bia'],
-    'hotel': ['hotel', 'khách sạn', 'resort', 'villa'],
-    'japanese': ['nhật', 'japan', 'sushi', 'ramen'],
-    'korean': ['hàn', 'korea', 'bbq'],
-}
-
-CATEGORY_TO_DB = {
-    'cafe': ['Coffee shop', 'Cafe', 'Coffee house', 'Espresso bar'],
-    'pho': ['Pho restaurant', 'Bistro', 'Restaurant', 'Vietnamese restaurant'],
-    'banh_mi': ['Bakery', 'Tiffin center', 'Restaurant'],
-    'seafood': ['Seafood restaurant', 'Restaurant', 'Asian restaurant'],
-    'restaurant': ['Restaurant', 'Vietnamese restaurant', 'Asian restaurant'],
-    'bar': ['Bar', 'Cocktail bar', 'Pub', 'Night club', 'Live music bar'],
-    'hotel': ['Hotel', 'Resort', 'Apartment', 'Villa', 'Holiday apartment rental'],
-    'japanese': ['Japanese restaurant', 'Sushi restaurant', 'Ramen restaurant'],
-    'korean': ['Korean restaurant', 'Korean barbecue restaurant'],
-}
+# Category constants - imported from centralized prompts
+from app.shared.prompts import CATEGORY_KEYWORDS, CATEGORY_TO_DB
 
 
-# Tool definition for agent
-TOOL_DEFINITION = {
-    "name": "retrieve_context_text",
-    "description": """Tìm kiếm thông tin địa điểm dựa trên văn bản, mô tả, đánh giá.
-
-Dùng khi:
-- Người dùng hỏi về menu, review, mô tả địa điểm
-- Tìm kiếm theo đặc điểm: "quán cafe view đẹp", "phở ngon giá rẻ"
-- Tìm theo không khí: "nơi lãng mạn", "chỗ yên tĩnh làm việc"
-
-Hỗ trợ: Vietnamese + English""",
-    "parameters": {
-        "query": "Câu query tìm kiếm tự nhiên (VD: 'quán phở nước dùng đậm đà')",
-        "limit": "Số kết quả tối đa (mặc định 10)",
-    },
-}
+# Tool definition for agent - imported from centralized prompts
+from app.shared.prompts import RETRIEVE_CONTEXT_TEXT_TOOL as TOOL_DEFINITION
 
 
 def detect_category_intent(query: str) -> Optional[str]:

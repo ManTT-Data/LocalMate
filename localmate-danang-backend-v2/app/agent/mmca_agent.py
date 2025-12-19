@@ -21,42 +21,18 @@ from app.mcp.tools import mcp_tools
 from app.shared.integrations.gemini_client import GeminiClient
 from app.shared.integrations.megallm_client import MegaLLMClient
 from app.shared.logger import agent_logger, AgentWorkflow, WorkflowStep
+from app.shared.prompts import (
+    MMCA_SYSTEM_PROMPT as SYSTEM_PROMPT,
+    GREETING_SYSTEM_PROMPT,
+    build_greeting_prompt,
+    build_synthesis_prompt,
+)
 
 
 # Default coordinates for Da Nang (if no location specified)
 DANANG_CENTER = (16.0544, 108.2022)
 
-# System prompt for the agent - balanced for all 3 tools
-SYSTEM_PROMPT = """Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Bạn có 3 công cụ tìm kiếm:
-
-**1. retrieve_context_text** - Tìm kiếm văn bản thông minh
-   - Khi nào: Hỏi về menu, review, mô tả, đặc điểm, phong cách
-   - Ví dụ: "Phở ngon giá rẻ", "Quán cafe view đẹp", "Nơi lãng mạn hẹn hò"
-   - Đặc biệt: Tự động phát hiện category (cafe, pho, seafood...) và boost kết quả
-
-**2. retrieve_similar_visuals** - Tìm theo hình ảnh
-   - Khi nào: Người dùng gửi ảnh hoặc mô tả về không gian, decor
-   - Scene filter: food, interior, exterior, view
-   - Ví dụ: "Quán có không gian giống ảnh này"
-
-**3. find_nearby_places** - Tìm theo vị trí
-   - Khi nào: Hỏi về khoảng cách, "gần đây", "gần X", "quanh Y"
-   - Ví dụ: "Quán cafe gần Cầu Rồng", "Nhà hàng gần bãi biển Mỹ Khê"
-   - Đặc biệt: Có thể lấy chi tiết đầy đủ với photos, reviews
-
-**4. search_social_media** - Tìm kiếm mạng xã hội và tin tức
-   - Khi nào: Hỏi về "review", "tin hot", "trend", "tiktok", "facebook", "tin mới"
-   - Ví dụ: "Review quán ăn ngon Đà Nẵng trên TikTok", "Tin hot tuần qua"
-   - Tham số: query, freshness ("pw": tuần, "pm": tháng), platforms (["tiktok", "facebook", "reddit"])
-
-**Quy tắc quan trọng:**
-1. Phân tích intent để chọn ĐÚNG tool (không chỉ dùng 1 tool)
-2. Với câu hỏi tổng quát ("quán cafe ngon") → dùng retrieve_context_text
-3. Với câu hỏi vị trí ("gần X", "quanh Y") → dùng find_nearby_places
-4. Với câu hỏi trend/review từ MXH -> dùng search_social_media
-5. Với ảnh → dùng retrieve_similar_visuals
-6. Trả lời tiếng Việt, thân thiện, cung cấp thông tin cụ thể (tên, rating, khoảng cách)
-"""
+# SYSTEM_PROMPT is imported from app.shared.prompts
 
 
 
@@ -496,19 +472,12 @@ class MMCAAgent:
         
         # If no tool results (greeting case), return simple response
         if not tool_results:
-            # Build history section if available
-            history_section = ""
-            if history:
-                history_section = f"Lịch sử hội thoại:\n{history}\n\n---\n"
-            
-            prompt = f"""{history_section}User nói: "{message}"
-
-Hãy trả lời thân thiện bằng tiếng Việt. Đây là lời chào hoặc tin nhắn đơn giản, không cần tìm kiếm địa điểm."""
+            prompt = build_greeting_prompt(message, history)
             
             response = await self.llm_client.generate(
                 prompt=prompt,
                 temperature=0.7,
-                system_instruction="Bạn là LocalMate - trợ lý du lịch thân thiện cho Đà Nẵng. Trả lời ngắn gọn, thân thiện.",
+                system_instruction=GREETING_SYSTEM_PROMPT,
             )
             return response, []
         
@@ -522,32 +491,8 @@ Hãy trả lời thân thiện bằng tiếng Việt. Đây là lời chào ho�
 
         context = "\n\n".join(context_parts)
 
-        # Build history section if available
-        history_section = ""
-        if history:
-            history_section = f"""Lịch sử hội thoại trước đó:
-{history}
-
----
-"""
-
         # Generate response using LLM with JSON format for place selection
-        prompt = f"""{history_section}Dựa trên kết quả tìm kiếm sau, hãy trả lời câu hỏi của người dùng.
-
-Câu hỏi hiện tại: {message}
-
-{context}
-
-**QUAN TRỌNG:** Trả lời theo format JSON:
-```json
-{{
-  "response": "Câu trả lời tiếng Việt, thân thiện. Giới thiệu top 2-3 địa điểm phù hợp nhất.",
-  "selected_place_ids": ["place_id_1", "place_id_2", "place_id_3"]
-}}
-```
-
-Chỉ chọn những place_id xuất hiện trong kết quả tìm kiếm ở trên. Nếu không có địa điểm phù hợp, để mảng rỗng.
-Nếu có lịch sử hội thoại, hãy cân nhắc ngữ cảnh trước đó khi trả lời."""
+        prompt = build_synthesis_prompt(message, context, history)
 
         agent_logger.llm_call(self.provider, self.model or "default", prompt[:100])
 

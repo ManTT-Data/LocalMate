@@ -7,6 +7,10 @@ from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 load_dotenv()  # Ensure .env is loaded before os.getenv()
 
+# Tool definition for agent - imported from centralized prompts
+from app.shared.prompts import SEARCH_SOCIAL_MEDIA_TOOL as TOOL_DEFINITION
+
+
 @dataclass
 class SocialSearchResult:
     title: str

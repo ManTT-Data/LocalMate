@@ -26,6 +26,10 @@ from app.mcp.tools import mcp_tools
 from app.shared.integrations.gemini_client import GeminiClient
 from app.shared.integrations.megallm_client import MegaLLMClient
 from app.shared.logger import agent_logger, AgentWorkflow, WorkflowStep
+from app.shared.prompts import (
+    SYNTHESIS_SYSTEM_PROMPT,
+    build_synthesis_prompt,
+)
 
 
 # Default coordinates for Da Nang
@@ -327,41 +331,23 @@ class ReActAgent:
         
         context = "\n\n".join(context_parts) if context_parts else "Không có kết quả."
         
-        # Build history section
-        history_section = ""
-        if history:
-            history_section = f"Lịch sử hội thoại:\n{history}\n\n---\n"
-        
         # Build steps summary
         steps_summary = "\n".join([
             f"- Bước {s.step_number}: {s.thought[:60]}... → {get_tool_purpose(s.action)}"
             for s in state.steps
         ])
         
-        prompt = f"""{history_section}Dựa trên các bước suy luận và tìm kiếm sau:
-
-{steps_summary}
-
-Và kết quả thu thập được:
-{context}
-
-Hãy trả lời câu hỏi của user một cách tự nhiên và hữu ích:
-"{state.query}"
-
-**QUAN TRỌNG:** Trả lời theo format JSON:
-```json
-{{
-  "response": "Câu trả lời tiếng Việt, thân thiện. Giới thiệu top 2-3 địa điểm phù hợp nhất.",
-  "selected_place_ids": ["place_id_1", "place_id_2", "place_id_3"]
-}}
-```
-
-Chỉ chọn những place_id xuất hiện trong kết quả tìm kiếm ở trên. Nếu không có địa điểm, để mảng rỗng."""
+        prompt = build_synthesis_prompt(
+            message=state.query,
+            context=context,
+            history=history,
+            include_steps=steps_summary,
+        )
 
         response = await self.llm_client.generate(
             prompt=prompt,
             temperature=0.7,
-            system_instruction="Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Trả lời format JSON.",
+            system_instruction=SYNTHESIS_SYSTEM_PROMPT,
         )
         
         # Parse JSON response

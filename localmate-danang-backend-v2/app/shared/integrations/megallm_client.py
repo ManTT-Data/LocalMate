@@ -67,8 +67,11 @@ class MegaLLMClient:
         last_error = None
         rate_limit_retries = 0
         
-        for attempt in range(max_retries + 1):
-            # Get rotated API key (get new key on each attempt for rate limit issues)
+        # Total attempts = max_retries + 1 (for timeout) + MAX_429_RETRIES (for rate limits)
+        total_attempts = max_retries + 1 + MAX_429_RETRIES
+        
+        for attempt in range(total_attempts):
+            # Get rotated API key (get new key on each attempt)
             api_key = self._get_api_key()
             
             try:
@@ -96,9 +99,10 @@ class MegaLLMClient:
                                 f"after {wait_time}s"
                             )
                             await asyncio.sleep(wait_time)
-                            continue
+                            continue  # Try again with a new key
                         else:
-                            # Max retries exceeded, raise the error
+                            # Max 429 retries exceeded - raise HTTPStatusError
+                            logger.error(f"[MegaLLM] Max 429 retries exceeded ({MAX_429_RETRIES})")
                             response.raise_for_status()
                     
                     response.raise_for_status()
@@ -110,16 +114,20 @@ class MegaLLMClient:
                 if attempt < max_retries:
                     logger.warning(f"[MegaLLM] Timeout, retry {attempt + 1}/{max_retries}")
                     continue
+                # After max timeout retries, raise the error
                 raise
-            except httpx.HTTPStatusError as e:
+            except httpx.HTTPStatusError:
                 # Re-raise HTTP errors (including 429 after max retries)
+                # This allows react_agent to catch and handle gracefully
                 raise
             except Exception as e:
                 last_error = e
                 raise
 
-        # This shouldn't be reached, but just in case
-        raise last_error if last_error else RuntimeError("Unknown error")
+        # If we exit the loop without returning, something went wrong
+        if last_error:
+            raise last_error
+        raise RuntimeError("Max retries exceeded")
 
     async def chat(
         self,
