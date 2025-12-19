@@ -39,43 +39,29 @@ class BraveSocialSearch:
         
         # Default social sites if none provided
         if not platforms:
-            social_sites = [
-                'site:twitter.com', 'site:x.com', 
-                'site:facebook.com', 
-                'site:reddit.com', 
-                'site:linkedin.com', 
-                'site:tiktok.com',
-                'site:instagram.com',
-                'site:threads.net'
-            ]
+            # Use general search with social/news filter - don't add complex site: operators
+            # as they can cause issues with Brave API for non-English queries
+            full_query = f"{query} review tin tức"  # Add context for social/news
         else:
-            # Map friendly names to site operators if needed, or assume raw site: checks
-            # Simplest is to assume user passes ["facebook", "reddit"] -> ["site:facebook.com", "site:reddit.com"]
-            # But let's be robust:
-            social_sites = []
+            # Add platform names as context keywords instead of site: operators
+            platform_keywords = []
             for p in platforms:
                 p = p.lower()
-                if "facebook" in p: social_sites.append("site:facebook.com")
-                elif "reddit" in p: social_sites.append("site:reddit.com")
-                elif "twitter" in p or "x" == p: social_sites.extend(["site:twitter.com", "site:x.com"])
-                elif "linkedin" in p: social_sites.append("site:linkedin.com")
-                elif "tiktok" in p: social_sites.append("site:tiktok.com")
-                elif "instagram" in p: social_sites.append("site:instagram.com")
-                elif "site:" in p: social_sites.append(p) # Direct operator
-        
-        # Construct query with site OR operator
-        if len(social_sites) > 1:
-            sites_query = " OR ".join(social_sites)
-            full_query = f"{query} ({sites_query})"
-        elif len(social_sites) == 1:
-            full_query = f"{query} {social_sites[0]}"
-        else:
-            full_query = query
+                if "facebook" in p: platform_keywords.append("facebook")
+                elif "reddit" in p: platform_keywords.append("reddit")
+                elif "twitter" in p or "x" == p: platform_keywords.append("twitter")
+                elif "linkedin" in p: platform_keywords.append("linkedin")
+                elif "tiktok" in p: platform_keywords.append("tiktok")
+                elif "instagram" in p: platform_keywords.append("instagram")
+                elif "youtube" in p: platform_keywords.append("youtube")
+            
+            if platform_keywords:
+                full_query = f"{query} {' '.join(platform_keywords)}"
+            else:
+                full_query = query
             
         params = {
             "q": full_query,
-
-
             "count": min(limit, 20),
             "freshness": freshness, 
             "result_filter": "web,news,discussions",

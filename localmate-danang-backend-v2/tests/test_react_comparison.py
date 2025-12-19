@@ -1,12 +1,14 @@
 """
-LocalMate Agent Test Script - Single vs ReAct Mode Comparison
+LocalMate Agent Test Script - Comprehensive Tool Coverage
 
-Tests 10 queries in both modes:
-- Single mode: configurable delay between queries
-- ReAct mode: configurable delay between queries  
-- Configurable delay between modes
+Tests 5 queries covering ALL tools in both modes:
+1. Greeting (no tools) - tests greeting detection
+2. Text search (retrieve_context_text)
+3. Location search (find_nearby_places)  
+4. Social search (search_social_media)
+5. Complex query (multiple tools in ReAct mode)
 
-Generates detailed report with all step inputs/outputs.
+Run: python tests/test_react_comparison.py
 """
 
 import asyncio
@@ -16,83 +18,63 @@ from datetime import datetime
 import httpx
 
 # =============================================================================
-# CONFIGURATION - Adjust these values as needed
+# CONFIGURATION
 # =============================================================================
 
-# API Settings
-API_BASE = "https://cuong2004-localmate.hf.space/api/v1"
-USER_ID = "test_comparison"
+# API Settings - Use localhost for local testing
+API_BASE = "http://localhost:8000/api/v1"
+USER_ID = "test_comprehensive"
 
 # Delay Settings (in seconds)
-SINGLE_MODE_DELAY = 10       # Delay between queries in single mode
-REACT_MODE_DELAY = 60       # Delay between queries in ReAct mode
-MODE_SWITCH_DELAY = 60      # Delay between switching modes
-REQUEST_TIMEOUT = 120       # Timeout for each API request
+SINGLE_MODE_DELAY = 5        # Delay between queries in single mode
+REACT_MODE_DELAY = 10        # Delay between queries in ReAct mode
+MODE_SWITCH_DELAY = 5        # Delay between switching modes
+REQUEST_TIMEOUT = 120        # Timeout for each API request
+
+# Provider settings
+PROVIDER = "MegaLLM"
+MODEL = "deepseek-ai/deepseek-v3.1-terminus"
 
 # =============================================================================
+# 5 TEST CASES - Covering ALL tools
+# =============================================================================
 
-# Test Cases - 10 queries covering different scenarios
 TEST_CASES = [
-    # {
-    #     "id": 1,
-    #     "query": "Quán cafe view đẹp",
-    #     "description": "Simple text search - no location",
-    #     "expected_tools": ["retrieve_context_text"],
-    # },
+    {
+        "id": 1,
+        "query": "xin chào",
+        "description": "Greeting - No tools expected",
+        "expected_tools": [],
+        "tool_coverage": "No tools (greeting detection)",
+    },
     {
         "id": 2,
-        "query": "Nhà hàng gần bãi biển Mỹ Khê",
-        "description": "Location-based search",
-        "expected_tools": ["find_nearby_places"],
+        "query": "Quán cafe view đẹp ở Đà Nẵng",
+        "description": "Text search - Semantic search in reviews",
+        "expected_tools": ["retrieve_context_text"],
+        "tool_coverage": "retrieve_context_text",
     },
-    # {
-    #     "id": 3,
-    #     "query": "Quán cafe có không gian xanh mát gần Cầu Rồng",
-    #     "description": "Complex: location + feature (should use multiple tools in ReAct)",
-    #     "expected_tools": ["find_nearby_places", "retrieve_context_text"],
-    # },
-    # {
-    #     "id": 4,
-    #     "query": "Phở ngon giá rẻ",
-    #     "description": "Food-specific text search",
-    #     "expected_tools": ["retrieve_context_text"],
-    # },
-    # {
-    #     "id": 5,
-    #     "query": "Địa điểm checkin đẹp gần Bà Nà",
-    #     "description": "Location + activity type",
-    #     "expected_tools": ["find_nearby_places"],
-    # },
-    # {
-    #     "id": 6,
-    #     "query": "Quán ăn hải sản có view sông gần trung tâm",
-    #     "description": "Complex: location + category + feature",
-    #     "expected_tools": ["find_nearby_places", "retrieve_context_text"],
-    # },
-    # {
-    #     "id": 7,
-    #     "query": "Khách sạn 5 sao gần biển",
-    #     "description": "Hotel + location search",
-    #     "expected_tools": ["find_nearby_places"],
-    # },
-    # {
-    #     "id": 8,
-    #     "query": "Quán bar có view đẹp về đêm",
-    #     "description": "Nightlife text search",
-    #     "expected_tools": ["retrieve_context_text"],
-    # },
-    # {
-    #     "id": 9,
-    #     "query": "Cafe rooftop gần Sơn Trà có coffee ngon",
-    #     "description": "Complex: location + feature + quality",
-    #     "expected_tools": ["find_nearby_places", "retrieve_context_text"],
-    # },
-    # {
-    #     "id": 10,
-    #     "query": "Nhà hàng Việt Nam authentic gần Rex Hotel",
-    #     "description": "Specific location + category + style",
-    #     "expected_tools": ["find_nearby_places", "retrieve_context_text"],
-    # },
+    {
+        "id": 3,
+        "query": "Nhà hàng gần Cầu Rồng",
+        "description": "Location search - Neo4j spatial query",
+        "expected_tools": ["find_nearby_places"],
+        "tool_coverage": "find_nearby_places",
+    },
+    {
+        "id": 4,
+        "query": "Review quán ăn hot trên tiktok Đà Nẵng",
+        "description": "Social search - Brave API news/trends",
+        "expected_tools": ["search_social_media"],
+        "tool_coverage": "search_social_media",
+    },
+    {
+        "id": 5,
+        "query": "Quán cafe không gian đẹp gần biển Mỹ Khê có review tốt",
+        "description": "Complex query - Multiple tools (ReAct advantage)",
+        "expected_tools": ["find_nearby_places", "retrieve_context_text"],
+        "tool_coverage": "Multiple tools",
+    },
 ]
 
 
@@ -106,7 +88,8 @@ async def run_test(client: httpx.AsyncClient, test_case: dict, react_mode: bool)
             json={
                 "message": test_case["query"],
                 "user_id": USER_ID,
-                "provider": "MegaLLM",
+                "provider": PROVIDER,
+                "model": MODEL,
                 "react_mode": react_mode,
                 "max_steps": 5,
             },
@@ -122,10 +105,13 @@ async def run_test(client: httpx.AsyncClient, test_case: dict, react_mode: bool)
                 "test_id": test_case["id"],
                 "query": test_case["query"],
                 "description": test_case["description"],
+                "tool_coverage": test_case["tool_coverage"],
+                "expected_tools": test_case["expected_tools"],
                 "react_mode": react_mode,
                 "response": data.get("response", "")[:300],
                 "workflow": data.get("workflow", {}),
                 "tools_used": data.get("tools_used", []),
+                "places_count": len(data.get("places", [])),
                 "api_duration_ms": data.get("duration_ms", 0),
                 "total_duration_ms": duration,
             }
@@ -150,125 +136,146 @@ async def run_test(client: httpx.AsyncClient, test_case: dict, react_mode: bool)
         }
 
 
-def format_workflow_steps(workflow: dict) -> str:
-    """Format workflow steps for report."""
-    steps = workflow.get("steps", [])
-    if not steps:
-        return "No steps recorded"
-    
-    lines = []
-    for step in steps:
-        tool = step.get("tool", "N/A")
-        purpose = step.get("purpose", "")
-        results = step.get("results", 0)
-        lines.append(f"  - {step.get('step', 'Unknown')}")
-        lines.append(f"    Tool: `{tool}` | Results: {results}")
-    
-    return "\n".join(lines)
+def check_tool_match(expected: list, actual: list) -> str:
+    """Check if expected tools match actual tools used."""
+    if not expected and not actual:
+        return "✅ Match"
+    if set(expected) == set(actual):
+        return "✅ Match"
+    if set(expected).issubset(set(actual)):
+        return "⚠️ Extra tools"
+    if any(t in actual for t in expected):
+        return "⚠️ Partial"
+    return "❌ Mismatch"
 
 
 def generate_report(single_results: list, react_results: list) -> str:
     """Generate detailed markdown report."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    report = f"""# LocalMate Agent Test Report
+    # Calculate stats
+    single_success = sum(1 for r in single_results if r.get('success'))
+    react_success = sum(1 for r in react_results if r.get('success'))
+    single_avg = sum(r.get('api_duration_ms', 0) for r in single_results if r.get('success')) / max(1, single_success)
+    react_avg = sum(r.get('api_duration_ms', 0) for r in react_results if r.get('success')) / max(1, react_success)
+    
+    # Collect all unique tools used
+    all_tools_single = set()
+    all_tools_react = set()
+    for r in single_results:
+        if r.get('success'):
+            all_tools_single.update(r.get('tools_used', []))
+    for r in react_results:
+        if r.get('success'):
+            all_tools_react.update(r.get('tools_used', []))
+    
+    report = f"""# LocalMate Agent Comprehensive Test Report
 
-**Generated:** {timestamp}
+**Generated:** {timestamp}  
+**Provider:** {PROVIDER}  
+**Model:** {MODEL}
+
+---
 
 ## Summary
 
 | Metric | Single Mode | ReAct Mode |
-|--------|-------------|------------|
-| Total Tests | {len(single_results)} | {len(react_results)} |
-| Success | {sum(1 for r in single_results if r.get('success'))} | {sum(1 for r in react_results if r.get('success'))} |
-| Avg Duration | {sum(r.get('api_duration_ms', 0) for r in single_results if r.get('success')) / max(1, sum(1 for r in single_results if r.get('success'))):.0f}ms | {sum(r.get('api_duration_ms', 0) for r in react_results if r.get('success')) / max(1, sum(1 for r in react_results if r.get('success'))):.0f}ms |
+|--------|:-----------:|:----------:|
+| Success Rate | {single_success}/{len(single_results)} | {react_success}/{len(react_results)} |
+| Avg Duration | {single_avg:.0f}ms | {react_avg:.0f}ms |
+| Unique Tools | {len(all_tools_single)} | {len(all_tools_react)} |
+
+### Tools Covered
+
+| Tool | Single Mode | ReAct Mode |
+|------|:-----------:|:----------:|
+| `retrieve_context_text` | {"✅" if "retrieve_context_text" in all_tools_single else "❌"} | {"✅" if "retrieve_context_text" in all_tools_react else "❌"} |
+| `find_nearby_places` | {"✅" if "find_nearby_places" in all_tools_single else "❌"} | {"✅" if "find_nearby_places" in all_tools_react else "❌"} |
+| `search_social_media` | {"✅" if "search_social_media" in all_tools_single else "❌"} | {"✅" if "search_social_media" in all_tools_react else "❌"} |
+| No tools (greeting) | {"✅" if any(not r.get('tools_used') for r in single_results if r.get('success')) else "❌"} | {"✅" if any(not r.get('tools_used') for r in react_results if r.get('success')) else "❌"} |
 
 ---
 
-## Detailed Results
+## Test Results
 
+| ID | Description | Single Tools | ReAct Tools | Match |
+|----|-------------|--------------|-------------|-------|
 """
+    
+    for single, react in zip(single_results, react_results):
+        test_id = single.get("test_id", "?")
+        desc = single.get("description", "")[:30]
+        expected = single.get("expected_tools", [])
+        
+        if single.get("success"):
+            single_tools = ", ".join(single.get("tools_used", [])) or "∅ (none)"
+            single_match = check_tool_match(expected, single.get("tools_used", []))
+        else:
+            single_tools = "❌ Error"
+            single_match = "❌"
+        
+        if react.get("success"):
+            react_tools = ", ".join(react.get("tools_used", [])) or "∅ (none)"
+            react_match = check_tool_match(expected, react.get("tools_used", []))
+        else:
+            react_tools = "❌ Error"
+            react_match = "❌"
+        
+        report += f"| {test_id} | {desc} | {single_tools} | {react_tools} | {single_match}/{react_match} |\n"
+    
+    report += "\n---\n\n## Detailed Results\n\n"
     
     for i, (single, react) in enumerate(zip(single_results, react_results)):
         test_id = single.get("test_id", i + 1)
         query = single.get("query", "N/A")
         description = single.get("description", "")
+        coverage = single.get("tool_coverage", "")
         
-        report += f"""### Test Case {test_id}: {description}
+        report += f"""### Test {test_id}: {description}
 
-**Query:** `{query}`
+**Query:** `{query}`  
+**Expected Tools:** {coverage}
 
-#### Single Mode
-
+| Mode | Status | Duration | Tools Used | Places |
+|------|--------|----------|------------|--------|
 """
+        
         if single.get("success"):
-            report += f"""- **Status:** ✅ Success
-- **Duration:** {single.get('api_duration_ms', 0):.0f}ms
-- **Tools Used:** {', '.join(single.get('tools_used', [])) or 'None'}
-
-**Workflow:**
-{format_workflow_steps(single.get('workflow', {}))}
-
-**Response Preview:**
-> {single.get('response', 'N/A')[:200]}...
-
-"""
+            s_tools = ", ".join(single.get("tools_used", [])) or "None"
+            report += f"| Single | ✅ | {single.get('api_duration_ms', 0):.0f}ms | {s_tools} | {single.get('places_count', 0)} |\n"
         else:
-            report += f"""- **Status:** ❌ Failed
-- **Error:** {single.get('error', 'Unknown')}
-
-"""
+            report += f"| Single | ❌ | - | Error: {single.get('error', 'Unknown')[:50]} | - |\n"
         
-        report += """#### ReAct Mode
-
-"""
         if react.get("success"):
-            workflow = react.get("workflow", {})
-            report += f"""- **Status:** ✅ Success
-- **Duration:** {react.get('api_duration_ms', 0):.0f}ms
-- **Tools Used:** {', '.join(react.get('tools_used', [])) or 'None'}
-- **Steps:** {len(workflow.get('steps', []))}
-- **Intent Detected:** {workflow.get('intent_detected', 'N/A')}
-
-**Workflow Steps:**
-{format_workflow_steps(workflow)}
-
-**Response Preview:**
-> {react.get('response', 'N/A')[:200]}...
-
-"""
+            r_tools = ", ".join(react.get("tools_used", [])) or "None"
+            report += f"| ReAct | ✅ | {react.get('api_duration_ms', 0):.0f}ms | {r_tools} | {react.get('places_count', 0)} |\n"
         else:
-            report += f"""- **Status:** ❌ Failed
-- **Error:** {react.get('error', 'Unknown')}
-
-"""
+            report += f"| ReAct | ❌ | - | Error: {react.get('error', 'Unknown')[:50]} | - |\n"
+        
+        report += "\n"
+        
+        # Show response preview for successful tests
+        if single.get("success"):
+            report += f"**Single Response:** {single.get('response', '')[:150]}...\n\n"
+        if react.get("success"):
+            report += f"**ReAct Response:** {react.get('response', '')[:150]}...\n\n"
         
         report += "---\n\n"
     
-    # Comparison analysis
-    report += """## Analysis
-
-### Tool Usage Comparison
-
-| Test | Single Mode Tools | ReAct Mode Tools | ReAct Steps |
-|------|-------------------|------------------|-------------|
-"""
+    # Overall verdict
+    all_tools_expected = {"retrieve_context_text", "find_nearby_places", "search_social_media"}
+    single_coverage = all_tools_expected.issubset(all_tools_single)
+    react_coverage = all_tools_expected.issubset(all_tools_react)
     
-    for single, react in zip(single_results, react_results):
-        test_id = single.get("test_id", "?")
-        single_tools = ", ".join(single.get("tools_used", [])) if single.get("success") else "❌"
-        react_tools = ", ".join(react.get("tools_used", [])) if react.get("success") else "❌"
-        react_steps = len(react.get("workflow", {}).get("steps", [])) if react.get("success") else 0
-        report += f"| {test_id} | {single_tools} | {react_tools} | {react_steps} |\n"
-    
-    report += """
+    report += f"""## Verdict
 
-### Key Observations
+| Criteria | Single Mode | ReAct Mode |
+|----------|:-----------:|:----------:|
+| All tests passed | {"✅" if single_success == len(single_results) else "❌"} | {"✅" if react_success == len(react_results) else "❌"} |
+| All 3 search tools covered | {"✅" if single_coverage else "❌"} | {"✅" if react_coverage else "❌"} |
+| Greeting detection works | {"✅" if any(not r.get('tools_used') and r.get('success') for r in single_results) else "❌"} | {"✅" if any(not r.get('tools_used') and r.get('success') for r in react_results) else "❌"} |
 
-1. **Multi-tool queries**: ReAct mode can chain multiple tools for complex queries
-2. **Single-tool queries**: Both modes perform similarly for simple queries
-3. **Reasoning steps**: ReAct mode shows explicit reasoning before each tool call
-
+**Overall:** {"🎉 ALL TESTS PASSED!" if single_success == len(single_results) and react_success == len(react_results) else "⚠️ Some tests failed"}
 """
     
     return report
@@ -277,7 +284,8 @@ def generate_report(single_results: list, react_results: list) -> str:
 async def main():
     """Main test runner."""
     print("=" * 60)
-    print("LocalMate Agent Mode Comparison Test")
+    print("LocalMate Agent Comprehensive Test")
+    print(f"Provider: {PROVIDER} | Model: {MODEL}")
     print("=" * 60)
     print()
     
@@ -285,42 +293,44 @@ async def main():
     react_results = []
     
     async with httpx.AsyncClient() as client:
-        # Test Single Mode
-        print(f"📌 Running Single Mode Tests ({SINGLE_MODE_DELAY}s delay)...")
-        print("-" * 40)
+        # Test Single Mode (react_mode=False)
+        print(f"📌 Running Single Mode Tests (react_mode=false, {SINGLE_MODE_DELAY}s delay)...")
+        print("-" * 50)
         
-        for test in TEST_CASES:
-            print(f"  Test {test['id']}: {test['query'][:40]}...")
+        for i, test in enumerate(TEST_CASES):
+            print(f"  [{test['id']}/5] {test['description'][:40]}...")
             result = await run_test(client, test, react_mode=False)
             single_results.append(result)
             
             status = "✅" if result.get("success") else "❌"
             tools = ", ".join(result.get("tools_used", [])) or "None"
-            print(f"    {status} Tools: {tools} | {result.get('api_duration_ms', 0):.0f}ms")
+            places = result.get("places_count", 0)
+            print(f"       {status} Tools: [{tools}] | Places: {places} | {result.get('api_duration_ms', 0):.0f}ms")
             
-            if test["id"] < len(TEST_CASES):
+            if i < len(TEST_CASES) - 1:
                 await asyncio.sleep(SINGLE_MODE_DELAY)
         
         print()
         print(f"⏸️  Waiting {MODE_SWITCH_DELAY}s before ReAct mode...")
         await asyncio.sleep(MODE_SWITCH_DELAY)
         
-        # Test ReAct Mode
+        # Test ReAct Mode (react_mode=True)
         print()
-        print(f"🧠 Running ReAct Mode Tests ({REACT_MODE_DELAY}s delay)...")
-        print("-" * 40)
+        print(f"🧠 Running ReAct Mode Tests (react_mode=true, {REACT_MODE_DELAY}s delay)...")
+        print("-" * 50)
         
-        for test in TEST_CASES:
-            print(f"  Test {test['id']}: {test['query'][:40]}...")
+        for i, test in enumerate(TEST_CASES):
+            print(f"  [{test['id']}/5] {test['description'][:40]}...")
             result = await run_test(client, test, react_mode=True)
             react_results.append(result)
             
             status = "✅" if result.get("success") else "❌"
             tools = ", ".join(result.get("tools_used", [])) or "None"
+            places = result.get("places_count", 0)
             steps = len(result.get("workflow", {}).get("steps", []))
-            print(f"    {status} Tools: {tools} | Steps: {steps} | {result.get('api_duration_ms', 0):.0f}ms")
+            print(f"       {status} Tools: [{tools}] | Places: {places} | Steps: {steps} | {result.get('api_duration_ms', 0):.0f}ms")
             
-            if test["id"] < len(TEST_CASES):
+            if i < len(TEST_CASES) - 1:
                 await asyncio.sleep(REACT_MODE_DELAY)
     
     # Generate report
@@ -328,7 +338,7 @@ async def main():
     print("📝 Generating report...")
     report = generate_report(single_results, react_results)
     
-    # Use absolute path based on script location
+    # Save report
     import os
     script_dir = os.path.dirname(os.path.abspath(__file__))
     report_path = os.path.join(script_dir, "react_comparison_report.md")
@@ -337,9 +347,22 @@ async def main():
     
     print(f"✅ Report saved to: {report_path}")
     print()
+    
+    # Quick summary
+    single_success = sum(1 for r in single_results if r.get('success'))
+    react_success = sum(1 for r in react_results if r.get('success'))
+    
     print("=" * 60)
-    print("Test Complete!")
+    print("SUMMARY")
     print("=" * 60)
+    print(f"Single Mode: {single_success}/{len(single_results)} passed")
+    print(f"ReAct Mode:  {react_success}/{len(react_results)} passed")
+    print()
+    
+    if single_success == len(single_results) and react_success == len(react_results):
+        print("🎉 ALL TESTS PASSED!")
+    else:
+        print("⚠️ Some tests failed - check report for details")
 
 
 if __name__ == "__main__":
