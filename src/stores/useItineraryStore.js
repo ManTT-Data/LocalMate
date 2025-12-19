@@ -65,6 +65,29 @@ const useItineraryStore = create(
       setCurrentItinerary: (itinerary) => set({ currentItinerary: itinerary }),
 
       /**
+       * Refresh current itinerary data from backend
+       */
+      refreshCurrentItinerary: async () => {
+        const current = get().currentItinerary;
+        if (!current?.id) return;
+
+        set({ isLoading: true });
+        try {
+          const updated = await fetchItineraryByIdAPI(current.id);
+          if (updated) {
+            set({
+              itineraryItems: updated.days || [],
+              currentItinerary: updated,
+              isLoading: false,
+              error: null,
+            });
+          }
+        } catch (err) {
+          set({ error: err.message, isLoading: false });
+        }
+      },
+
+      /**
        * Toggle whether to include user location as starting point
        */
       toggleUserLocation: () => {
@@ -453,14 +476,14 @@ const useItineraryStore = create(
             items: plan.items.map((item) =>
               item.itemId === itemId
                 ? {
-                    ...item,
-                    placeId: newPlace.id,
-                    name: newPlace.name,
-                    category: newPlace.type || "Place",
-                    lat: newPlace.location.lat,
-                    lng: newPlace.location.lng,
-                    destination: newPlace,
-                  }
+                  ...item,
+                  placeId: newPlace.id,
+                  name: newPlace.name,
+                  category: newPlace.type || "Place",
+                  lat: newPlace.location.lat,
+                  lng: newPlace.location.lng,
+                  destination: newPlace,
+                }
                 : item
             ),
             isOptimized: false,

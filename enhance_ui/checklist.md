@@ -22,7 +22,7 @@
 ### Loading States
 - [x] Skeleton component cho loading
 - [x] Shimmer animation effect
-- [ ] Replace Loader spinners với skeletons
+- [x] Replace Loader spinners với skeletons
 
 ---
 
@@ -63,8 +63,8 @@
 
 ### Advanced Features
 - [x] Drag-and-drop itinerary reordering (Days & Stops)
-- [ ] Pull-to-refresh cho lists
-- [ ] Swipe gestures
+- [x] Pull-to-refresh cho lists
+- [x] Swipe gestures
 
 ---
 
@@ -72,8 +72,8 @@
 
 | Phase | Total | Done | Progress |
 |-------|-------|------|----------|
-| Phase 1 | 13 | 12 | 92% ✅ |
+| Phase 1 | 13 | 13 | 100% ✅ |
 | Phase 2 | 12 | 12 | 100% ✅ |
-| Phase 3 | 8 | 6 | 75% ✅ |
+| Phase 3 | 8 | 8 | 100% ✅ |
 
 **Last Updated**: December 19, 2024

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 import ItineraryList from "../components/Itinerary/ItineraryList";
 import ItineraryMap from "../components/Itinerary/ItineraryMap";
+import ItinerarySkeleton from "../components/Itinerary/ItinerarySkeleton";
 import ContextualToolbar from "../components/ContextualToolbar/ContextualToolbar";
 import EditItineraryModal from "../components/Itinerary/EditItineraryModal";
 import { modals } from "@mantine/modals";
@@ -238,14 +239,30 @@ const AiItinerary = () => {
     return (
       <AppLayout>
         <Flex
-          justify="center"
-          align="center"
-          h="100%"
-          direction="column"
-          gap="md"
+          flex={1}
+          bg="gray.0"
+          style={{ position: "relative", overflow: "hidden", height: "100%" }}
         >
-          <Loader size="xl" />
-          <Text c="dimmed">Loading your itinerary...</Text>
+          {/* Content Area Skeleton */}
+          <Flex flex={1} pt={76} h="100%" style={{ overflow: "hidden" }} w="100%">
+            <Paper
+              width={450}
+              miw={450}
+              component={Flex}
+              direction="column"
+              shadow="md"
+              radius={0}
+              style={{
+                zIndex: 10,
+                borderRight: "1px solid var(--mantine-color-gray-3)",
+              }}
+            >
+              <ItinerarySkeleton />
+            </Paper>
+            <Box flex={1} h="100%" bg="gray.1">
+              <Skeleton h="100%" w="100%" />
+            </Box>
+          </Flex>
         </Flex>
       </AppLayout>
     );
