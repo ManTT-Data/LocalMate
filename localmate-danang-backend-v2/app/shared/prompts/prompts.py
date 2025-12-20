@@ -107,6 +107,7 @@ Với mỗi bước, bạn phải:
 ```
 
 **Quan trọng:**
+- Nếu là lời chào/small talk → action = "finish" với response thân thiện
 - Nếu cần biết vị trí → dùng get_location_coordinates trước
 - Nếu tìm theo khoảng cách → dùng find_nearby_places
 - Nếu tìm review/trend MXH → dùng search_social_media
@@ -121,9 +122,73 @@ GREETING_SYSTEM_PROMPT = "Bạn là LocalMate - trợ lý du lịch thân thiệ
 SYNTHESIS_SYSTEM_PROMPT = "Bạn là trợ lý du lịch thông minh cho Đà Nẵng. Trả lời format JSON."
 
 
+# Intent detection prompt for LLM-based tool selection
+INTENT_SYSTEM_PROMPT = "Bạn là AI phân tích intent. Trả lời CHÍNH XÁC format JSON, không giải thích thêm."
+
+INTENT_DETECTION_PROMPT = """Phân tích câu hỏi của user và chọn tool(s) phù hợp nhất.
+
+**Tools có sẵn:**
+1. `retrieve_context_text` - Tìm kiếm semantic trong văn bản (review, mô tả, đặc điểm)
+   - Dùng khi: hỏi về chất lượng, đặc điểm, menu, giá cả, không khí
+   - Ví dụ: "quán cafe view đẹp", "phở ngon giá rẻ", "nơi lãng mạn"
+
+2. `find_nearby_places` - Tìm địa điểm theo vị trí/khoảng cách
+   - Dùng khi: hỏi về vị trí, khoảng cách, "gần X", "quanh Y"
+   - Ví dụ: "quán gần Cầu Rồng", "cafe gần bãi biển"
+   - **Category mapping** (QUAN TRỌNG - dùng tiếng Anh):
+     - nhà hàng/quán ăn → "Restaurant"
+     - cafe/cà phê → "Coffee shop"  
+     - bar/pub → "Bar"
+     - hotel/khách sạn → "Hotel"
+     - phở → "Pho restaurant"
+     - hải sản → "Seafood restaurant"
+     - Nhật/sushi → "Japanese restaurant"
+     - Hàn/BBQ → "Korean restaurant"
+
+3. `search_social_media` - Tìm review/trend từ mạng xã hội
+   - Dùng khi: hỏi về review, tin hot, trend, viral, TikTok, Facebook
+   - Ví dụ: "review quán ăn trên TikTok", "tin hot tuần này"
+
+4. `retrieve_similar_visuals` - Tìm theo hình ảnh tương tự
+   - Dùng khi: user gửi ảnh, hoặc mô tả về decor/không gian
+   - Ví dụ: "quán có không gian giống ảnh này"
+
+**Trả lời theo format JSON:**
+```json
+{
+  "tools": [
+    {
+      "name": "tool_name",
+      "arguments": {"param": "value"},
+      "reason": "lý do ngắn gọn"
+    }
+  ],
+  "is_greeting": false
+}
+```
+
+**Quy tắc QUAN TRỌNG:**
+1. **Greeting/Small talk** (chào, cảm ơn, ok, được, tốt, bye):
+   → `{"tools": [], "is_greeting": true}`
+   
+2. **Câu hỏi vị trí** (gần, quanh, cách):
+   → `find_nearby_places` với location và category (DÙNG TIẾNG ANH cho category!)
+
+3. **Câu hỏi chất lượng/đặc điểm** (ngon, đẹp, rẻ, view):
+   → `retrieve_context_text`
+
+4. **Review/Trend MXH** (tiktok, facebook, viral):
+   → `search_social_media`
+
+5. Có thể chọn **NHIỀU tool** nếu query phức tạp
+"""
+
+
+
 # =============================================================================
 # PROMPT TEMPLATES
 # =============================================================================
+
 
 def build_greeting_prompt(message: str, history: str | None = None) -> str:
     """
@@ -143,6 +208,29 @@ def build_greeting_prompt(message: str, history: str | None = None) -> str:
     return f"""{history_section}User nói: "{message}"
 
 Hãy trả lời thân thiện bằng tiếng Việt. Đây là lời chào hoặc tin nhắn đơn giản, không cần tìm kiếm địa điểm."""
+
+
+def build_intent_prompt(message: str, has_image: bool = False) -> str:
+    """
+    Build prompt for LLM-based intent detection.
+    
+    Args:
+        message: User's query
+        has_image: Whether user provided an image
+        
+    Returns:
+        Formatted prompt for intent detection
+    """
+    image_hint = ""
+    if has_image:
+        image_hint = "\n\n**Lưu ý:** User đã gửi kèm ảnh → nên dùng `retrieve_similar_visuals`"
+    
+    return f"""{INTENT_DETECTION_PROMPT}
+{image_hint}
+**Câu hỏi của user:** "{message}"
+
+Trả lời JSON:"""
+
 
 
 def build_synthesis_prompt(
@@ -186,11 +274,17 @@ Câu hỏi hiện tại: {message}
 
 {context}
 
-**QUAN TRỌNG:** Trả lời theo format JSON:
+**QUAN TRỌNG - ĐỌC KỸ:**
+1. KHÔNG viết code, KHÔNG gọi tool, KHÔNG output tool_code
+2. Chỉ trả lời bằng văn bản tiếng Việt thân thiện
+3. Giới thiệu 2-3 địa điểm phù hợp nhất từ kết quả trên
+4. Nếu không có kết quả phù hợp, thông báo và đề xuất thử cách khác
+
+**Trả lời theo format JSON:**
 ```json
 {{
-  "response": "Câu trả lời tiếng Việt, thân thiện. Giới thiệu top 2-3 địa điểm phù hợp nhất.",
-  "selected_place_ids": ["place_id_1", "place_id_2", "place_id_3"]
+  "response": "Câu trả lời tiếng Việt thân thiện, giới thiệu địa điểm cụ thể với tên, rating, mô tả ngắn.",
+  "selected_place_ids": ["place_id_1", "place_id_2"]
 }}
 ```
 
@@ -362,31 +456,75 @@ AVAILABLE_CATEGORIES = [
     "Vietnamese restaurant",
 ]
 
-# Category keywords for intent detection (user query -> category)
-CATEGORY_KEYWORDS = {
-    'cafe': ['cafe', 'cà phê', 'coffee', 'caphe', 'caphê'],
-    'pho': ['phở', 'pho'],
-    'banh_mi': ['bánh mì', 'banh mi', 'bread'],
-    'seafood': ['hải sản', 'hai san', 'seafood', 'cá', 'tôm', 'cua'],
-    'restaurant': ['nhà hàng', 'restaurant', 'quán ăn', 'ăn'],
-    'bar': ['bar', 'pub', 'cocktail', 'beer', 'bia'],
-    'hotel': ['hotel', 'khách sạn', 'resort', 'villa'],
-    'japanese': ['nhật', 'japan', 'sushi', 'ramen'],
-    'korean': ['hàn', 'korea', 'bbq'],
-}
 
-# Category keyword -> Database category name mapping
-CATEGORY_TO_DB = {
-    'cafe': ['Coffee shop', 'Cafe', 'Coffee house', 'Espresso bar'],
-    'pho': ['Pho restaurant', 'Bistro', 'Restaurant', 'Vietnamese restaurant'],
-    'banh_mi': ['Bakery', 'Tiffin center', 'Restaurant'],
-    'seafood': ['Seafood restaurant', 'Restaurant', 'Asian restaurant'],
-    'restaurant': ['Restaurant', 'Vietnamese restaurant', 'Asian restaurant'],
-    'bar': ['Bar', 'Cocktail bar', 'Pub', 'Night club', 'Live music bar'],
-    'hotel': ['Hotel', 'Resort', 'Apartment', 'Villa', 'Holiday apartment rental'],
-    'japanese': ['Japanese restaurant', 'Sushi restaurant', 'Ramen restaurant'],
-    'korean': ['Korean restaurant', 'Korean barbecue restaurant'],
-}
+# =============================================================================
+# SMART PLAN PROMPTS
+# =============================================================================
+
+SMART_PLAN_SYSTEM_PROMPT = """Bạn là chuyên gia lập lịch trình du lịch Đà Nẵng.
+
+**Kiến thức đặc biệt về Đà Nẵng:**
+- Cầu Rồng phun lửa/nước: 21h Thứ 7, Chủ Nhật
+- Bãi biển Mỹ Khê: 5-7h sáng (bình minh đẹp) hoặc 16-18h (hoàng hôn)
+- Chợ Hàn: Sáng sớm 6-9h (đồ tươi, giá tốt) hoặc chiều tối 16-20h
+- Bà Nà Hills: Đến sớm 8h để tránh đông, mát mẻ hơn
+- Sơn Trà: Sáng sớm 5-6h để săn mây, ngắm voọc
+- Ngũ Hành Sơn: Sớm 7-8h, mát và ít đông
+- Hội An: Chiều tối 16-20h đẹp nhất, thả đèn hoa đăng tối
+
+**Nhiệm vụ:**
+1. Sắp xếp thời gian tối ưu cho từng địa điểm
+2. Thêm tips hữu ích dựa trên kiến thức địa phương
+3. Ước tính thời gian hợp lý tại mỗi nơi
+
+Trả lời format JSON."""
+
+
+def build_smart_plan_prompt(places: list[dict], total_days: int = 1) -> str:
+    """
+    Build prompt for LLM to optimize smart plan timing.
+    
+    Args:
+        places: List of place info dicts with name, category, social_info
+        total_days: Number of days for the trip
+        
+    Returns:
+        Formatted prompt string
+    """
+    places_text = ""
+    for i, p in enumerate(places, 1):
+        places_text += f"{i}. {p.get('name', 'Unknown')}"
+        if p.get('category'):
+            places_text += f" [{p['category']}]"
+        if p.get('social_info'):
+            places_text += f"\n   Social: {p['social_info'][:150]}"
+        places_text += "\n"
+    
+    return f"""Hãy tối ưu lịch trình {total_days} ngày với các địa điểm sau:
+
+{places_text}
+
+**Yêu cầu:**
+1. Gợi ý thời gian đến (time) tối ưu cho mỗi địa điểm
+2. Thêm tips hữu ích (dựa trên kiến thức địa phương Đà Nẵng)
+3. Ước tính thời gian ở (duration) tính bằng phút
+
+**Trả lời JSON:**
+```json
+{{
+  "places": [
+    {{
+      "name": "Tên địa điểm",
+      "time": "HH:MM",
+      "duration": 60,
+      "tips": ["Tip 1", "Tip 2"]
+    }}
+  ],
+  "day_summaries": [
+    "Ngày 1: Khám phá bãi biển và ẩm thực"
+  ]
+}}
+```"""
 
 
 # =============================================================================
@@ -409,10 +547,15 @@ __all__ = [
     "SEARCH_SOCIAL_MEDIA_TOOL",
     # Database constants
     "AVAILABLE_CATEGORIES",
-    "CATEGORY_KEYWORDS",
-    "CATEGORY_TO_DB",
+    # Intent detection
+    "INTENT_SYSTEM_PROMPT",
+    "INTENT_DETECTION_PROMPT",
+    "build_intent_prompt",
     # Prompt builders
     "build_greeting_prompt",
     "build_synthesis_prompt",
     "build_reasoning_prompt",
+    # Smart Plan
+    "SMART_PLAN_SYSTEM_PROMPT",
+    "build_smart_plan_prompt",
 ]

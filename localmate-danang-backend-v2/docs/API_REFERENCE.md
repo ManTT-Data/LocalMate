@@ -541,6 +541,99 @@ Delete a plan.
 
 ---
 
+### POST `/planner/{plan_id}/get-plan`
+
+Generate an optimized Smart Plan with social media research and optimal timing.
+
+**Query:** `?user_id=user_123`
+
+**Request:**
+```json
+{
+  "include_social_research": true,
+  "freshness": "pw"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `include_social_research` | boolean | Enable Brave Search for reviews (default: true) |
+| `freshness` | string | "pw" = past week, "pm" = past month |
+
+**Response:**
+```json
+{
+  "plan": {
+    "itinerary_id": "plan_abc123",
+    "title": "Da Nang Test Trip",
+    "total_days": 1,
+    "days": [
+      {
+        "day_index": 1,
+        "date": null,
+        "places": [
+          {
+            "place_id": "my_khe_1",
+            "name": "Bãi biển Mỹ Khê",
+            "category": "beach",
+            "lat": 16.0544,
+            "lng": 108.245,
+            "recommended_time": "05:30",
+            "suggested_duration_min": 90,
+            "tips": [
+              "Đón bình minh đẹp nhất vào khoảng 5h30 - 6h00 sáng.",
+              "Xem ngư dân kéo lưới và mua hải sản tươi sống."
+            ],
+            "highlights": "Summary from social research...",
+            "social_mentions": ["[TikTok] Review Mỹ Khê..."],
+            "order": 1
+          },
+          {
+            "place_id": "cau_rong_1",
+            "name": "Cầu Rồng",
+            "category": "attraction",
+            "recommended_time": "20:30",
+            "suggested_duration_min": 60,
+            "tips": [
+              "Nếu đi vào Thứ 7 hoặc Chủ Nhật, Rồng sẽ phun lửa và nước vào lúc 21:00.",
+              "Đứng ở phía đầu Rồng để xem rõ nhất."
+            ],
+            "order": 2
+          }
+        ],
+        "day_summary": "Ngày 1: 2 địa điểm",
+        "day_distance_km": 3.57
+      }
+    ],
+    "summary": "Lịch trình với 2 địa điểm trong 1 ngày.",
+    "total_distance_km": 3.57,
+    "estimated_total_duration_min": 150,
+    "generated_at": "2025-12-20T06:20:59"
+  },
+  "research_count": 5,
+  "generation_time_ms": 9486.47,
+  "message": "Smart plan generated with 5 social mentions"
+}
+```
+
+> **Features:**
+> - **Optimal Timing**: Da Nang local knowledge (Dragon Bridge 21h, Mỹ Khê sunrise)
+> - **Social Research**: Pulls reviews from TikTok, Facebook, Reddit via Brave API
+> - **LLM Enhancement**: Uses Gemini 3 Flash for tips and scheduling
+> - **Distance Calculation**: Haversine formula for route distances
+
+---
+
+### POST `/itineraries/{itinerary_id}/get-plan`
+
+Same as above, but for multi-day itineraries (persistent storage).
+
+**Query:** `?user_id=uuid-here`
+
+**Request/Response:** Same format as planner get-plan
+
+---
+
 ## Utility Endpoints
 
 ### GET `/health`
@@ -601,6 +694,42 @@ interface WorkflowStep {
   tool?: string;
   purpose: string;
   results: number;
+}
+```
+
+### SmartPlan (Get Plan Response)
+```typescript
+interface SmartPlan {
+  itinerary_id: string;
+  title: string;
+  total_days: number;
+  days: DayPlan[];
+  summary: string;
+  total_distance_km: number;
+  estimated_total_duration_min: number;
+  generated_at: string;
+}
+
+interface DayPlan {
+  day_index: number;
+  date?: string;
+  places: PlaceDetail[];
+  day_summary: string;
+  day_distance_km: number;
+}
+
+interface PlaceDetail {
+  place_id: string;
+  name: string;
+  category: string;
+  lat: number;
+  lng: number;
+  recommended_time: string;     // "05:30", "21:00"
+  suggested_duration_min: number;
+  tips: string[];               // ["Xem cầu rồng phun lửa..."]
+  highlights: string;           // Summary from social research
+  social_mentions: string[];    // ["[TikTok] Review..."]
+  order: number;
 }
 ```
 

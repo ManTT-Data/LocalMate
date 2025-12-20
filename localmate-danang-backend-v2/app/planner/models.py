@@ -98,3 +98,63 @@ class PlanResponse(BaseModel):
     
     plan: Plan
     message: str
+
+
+# =============================================================================
+# SMART PLAN MODELS
+# =============================================================================
+
+class PlaceDetailResponse(BaseModel):
+    """Rich detail for a place in smart plan."""
+    
+    place_id: str = Field(..., description="Place ID")
+    name: str = Field(..., description="Place name")
+    category: str = Field(default="", description="Category")
+    lat: float = Field(default=0.0, description="Latitude")
+    lng: float = Field(default=0.0, description="Longitude")
+    recommended_time: str = Field(default="", description="Recommended visit time (HH:MM)")
+    suggested_duration_min: int = Field(default=60, description="Suggested duration in minutes")
+    tips: list[str] = Field(default_factory=list, description="Tips for this place")
+    highlights: str = Field(default="", description="Highlights from research")
+    social_mentions: list[str] = Field(default_factory=list, description="Social media mentions")
+    order: int = Field(default=0, description="Order in day")
+
+
+class DayPlanResponse(BaseModel):
+    """Single day plan."""
+    
+    day_index: int = Field(..., description="Day number (1-indexed)")
+    date: Optional[str] = Field(None, description="Date (YYYY-MM-DD)")
+    places: list[PlaceDetailResponse] = Field(default_factory=list)
+    day_summary: str = Field(default="", description="Day summary")
+    day_distance_km: float = Field(default=0.0, description="Total distance for the day")
+
+
+class SmartPlanResponse(BaseModel):
+    """Complete optimized plan with enriched details."""
+    
+    itinerary_id: str = Field(..., description="Reference ID")
+    title: str = Field(..., description="Plan title")
+    total_days: int = Field(..., description="Number of days")
+    days: list[DayPlanResponse] = Field(default_factory=list)
+    summary: str = Field(default="", description="Plan summary")
+    total_distance_km: float = Field(default=0.0, description="Total route distance")
+    estimated_total_duration_min: int = Field(default=0, description="Total estimated duration")
+    generated_at: datetime = Field(default_factory=datetime.now)
+
+
+class GetPlanRequest(BaseModel):
+    """Request for smart plan generation."""
+    
+    include_social_research: bool = Field(default=True, description="Include social media research")
+    freshness: str = Field(default="pw", description="Social search freshness: pw=past week, pm=past month")
+
+
+class GetPlanResponse(BaseModel):
+    """Response with smart plan."""
+    
+    plan: SmartPlanResponse
+    research_count: int = Field(default=0, description="Number of social results found")
+    generation_time_ms: float = Field(default=0, description="Plan generation time in ms")
+    message: str = Field(default="Smart plan generated successfully")
+

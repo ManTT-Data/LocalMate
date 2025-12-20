@@ -588,3 +588,157 @@ async def optimize_itinerary_route(
         "stop_count": len(stops),
         "note": "TSP optimization will be implemented in future update"
     }
+
+
+# ==================== SMART PLAN ENDPOINT ====================
+
+from app.planner.models import (
+    GetPlanRequest,
+    GetPlanResponse,
+    SmartPlanResponse,
+    DayPlanResponse,
+    PlaceDetailResponse,
+)
+from app.planner.smart_plan import smart_plan_service
+import time as time_module
+
+
+@router.post(
+    "/{itinerary_id}/get-plan",
+    response_model=GetPlanResponse,
+    summary="Generate Smart Plan from Itinerary",
+    description="""
+Generates an optimized, enriched plan from an itinerary with:
+- Social media research for each stop
+- Optimal timing (e.g., Dragon Bridge at 21h for fire show)
+- Tips and highlights per place
+- Multi-day organization
+""",
+)
+async def get_itinerary_smart_plan(
+    itinerary_id: str,
+    request: GetPlanRequest = GetPlanRequest(),
+    user_id: str = Query(..., description="User ID"),
+    db: AsyncSession = Depends(get_db),
+) -> GetPlanResponse:
+    """
+    Generate a smart, enriched travel plan from an itinerary.
+    
+    Uses Social Media Tool to research each place and LLM to optimize
+    timing based on Da Nang local knowledge.
+    """
+    start_time = time_module.time()
+    
+    # Validate UUIDs
+    validate_uuid(user_id, "user_id")
+    validate_uuid(itinerary_id, "itinerary_id")
+    
+    # Get itinerary with stops
+    result = await db.execute(
+        text("""
+            SELECT id, title, total_days, start_date
+            FROM itineraries
+            WHERE id = :id AND user_id = :user_id
+        """),
+        {"id": itinerary_id, "user_id": user_id}
+    )
+    row = result.fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Itinerary not found")
+    
+    # Get all stops with snapshots
+    stops_result = await db.execute(
+        text("""
+            SELECT id, place_id, day_index, order_index, snapshot
+            FROM itinerary_stops
+            WHERE itinerary_id = :itinerary_id
+            ORDER BY day_index, order_index
+        """),
+        {"itinerary_id": itinerary_id}
+    )
+    stops = stops_result.fetchall()
+    
+    if len(stops) == 0:
+        raise HTTPException(status_code=400, detail="Itinerary has no stops. Add stops first.")
+    
+    # Convert stops to places format
+    places = []
+    for stop in stops:
+        snapshot = stop.snapshot or {}
+        places.append({
+            "place_id": stop.place_id,
+            "name": snapshot.get("name", f"Place {stop.place_id[:8]}"),
+            "category": snapshot.get("category", ""),
+            "lat": snapshot.get("lat", 0.0),
+            "lng": snapshot.get("lng", 0.0),
+            "rating": snapshot.get("rating"),
+        })
+    
+    # Generate smart plan
+    smart_plan = await smart_plan_service.generate_smart_plan(
+        places=places,
+        title=row.title,
+        itinerary_id=str(row.id),
+        total_days=row.total_days,
+        start_date=row.start_date,
+        include_social_research=request.include_social_research,
+        freshness=request.freshness,
+    )
+    
+    # Count social research results
+    research_count = sum(
+        len(p.social_mentions)
+        for day in smart_plan.days
+        for p in day.places
+    )
+    
+    generation_time = (time_module.time() - start_time) * 1000
+    
+    # Convert to Pydantic response
+    days_response = []
+    for day in smart_plan.days:
+        places_response = [
+            PlaceDetailResponse(
+                place_id=p.place_id,
+                name=p.name,
+                category=p.category,
+                lat=p.lat,
+                lng=p.lng,
+                recommended_time=p.recommended_time,
+                suggested_duration_min=p.suggested_duration_min,
+                tips=p.tips,
+                highlights=p.highlights,
+                social_mentions=p.social_mentions,
+                order=p.order,
+            )
+            for p in day.places
+        ]
+        days_response.append(
+            DayPlanResponse(
+                day_index=day.day_index,
+                date=str(day.date) if day.date else None,
+                places=places_response,
+                day_summary=day.day_summary,
+                day_distance_km=day.day_distance_km,
+            )
+        )
+    
+    plan_response = SmartPlanResponse(
+        itinerary_id=smart_plan.itinerary_id,
+        title=smart_plan.title,
+        total_days=smart_plan.total_days,
+        days=days_response,
+        summary=smart_plan.summary,
+        total_distance_km=smart_plan.total_distance_km,
+        estimated_total_duration_min=smart_plan.estimated_total_duration_min,
+        generated_at=smart_plan.generated_at,
+    )
+    
+    return GetPlanResponse(
+        plan=plan_response,
+        research_count=research_count,
+        generation_time_ms=round(generation_time, 2),
+        message=f"Smart plan generated for {row.total_days}-day itinerary with {research_count} social mentions",
+    )
+

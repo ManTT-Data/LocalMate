@@ -5,6 +5,9 @@ from app.shared.prompts.prompts import (
     REACT_SYSTEM_PROMPT,
     GREETING_SYSTEM_PROMPT,
     SYNTHESIS_SYSTEM_PROMPT,
+    INTENT_SYSTEM_PROMPT,
+    INTENT_DETECTION_PROMPT,
+    SMART_PLAN_SYSTEM_PROMPT,
     TOOL_DEFINITIONS,
     TOOL_PURPOSES,
     # Tool-specific definitions
@@ -14,12 +17,12 @@ from app.shared.prompts.prompts import (
     SEARCH_SOCIAL_MEDIA_TOOL,
     # Database constants
     AVAILABLE_CATEGORIES,
-    CATEGORY_KEYWORDS,
-    CATEGORY_TO_DB,
     # Prompt builders
     build_greeting_prompt,
+    build_intent_prompt,
     build_synthesis_prompt,
     build_reasoning_prompt,
+    build_smart_plan_prompt,
 )
 
 __all__ = [
@@ -27,6 +30,9 @@ __all__ = [
     "REACT_SYSTEM_PROMPT",
     "GREETING_SYSTEM_PROMPT",
     "SYNTHESIS_SYSTEM_PROMPT",
+    "INTENT_SYSTEM_PROMPT",
+    "INTENT_DETECTION_PROMPT",
+    "SMART_PLAN_SYSTEM_PROMPT",
     "TOOL_DEFINITIONS",
     "TOOL_PURPOSES",
     "FIND_NEARBY_PLACES_TOOL",
@@ -34,9 +40,9 @@ __all__ = [
     "RETRIEVE_SIMILAR_VISUALS_TOOL",
     "SEARCH_SOCIAL_MEDIA_TOOL",
     "AVAILABLE_CATEGORIES",
-    "CATEGORY_KEYWORDS",
-    "CATEGORY_TO_DB",
     "build_greeting_prompt",
+    "build_intent_prompt",
     "build_synthesis_prompt",
     "build_reasoning_prompt",
+    "build_smart_plan_prompt",
 ]

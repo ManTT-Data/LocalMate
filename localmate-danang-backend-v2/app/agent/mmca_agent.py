@@ -24,7 +24,9 @@ from app.shared.logger import agent_logger, AgentWorkflow, WorkflowStep
 from app.shared.prompts import (
     MMCA_SYSTEM_PROMPT as SYSTEM_PROMPT,
     GREETING_SYSTEM_PROMPT,
+    INTENT_SYSTEM_PROMPT,
     build_greeting_prompt,
+    build_intent_prompt,
     build_synthesis_prompt,
 )
 
@@ -133,18 +135,23 @@ class MMCAAgent:
         # Add user message to internal history
         self.conversation_history.append(ChatMessage(role="user", content=message))
 
-        # Step 1: Analyze intent and decide tool usage
+        # Step 1: Analyze intent and plan tools (LLM-based)
         workflow.add_step(WorkflowStep(
             step_name="Intent Analysis",
             purpose="Phân tích câu hỏi để chọn tool phù hợp"
         ))
         
         agent_logger.workflow_step("Step 1: Intent Analysis", message[:80])
-        intent = self._detect_intent(message, image_url)
-        workflow.intent_detected = intent
-        agent_logger.workflow_step("Intent detected", intent)
         
         tool_calls = await self._plan_tool_calls(message, image_url)
+        
+        # Set intent based on selected tools (from LLM)
+        if not tool_calls:
+            intent = "greeting"
+        else:
+            intent = " + ".join([tc.tool_name for tc in tool_calls])
+        workflow.intent_detected = intent
+        agent_logger.workflow_step("Intent detected", intent)
         
         workflow.add_step(WorkflowStep(
             step_name="Tool Planning",
@@ -217,27 +224,6 @@ class MMCAAgent:
             selected_place_ids=selected_place_ids,
         )
 
-    def _detect_intent(self, message: str, image_url: str | None) -> str:
-        """Detect user intent for logging."""
-        intents = []
-        
-        if image_url:
-            intents.append("visual_search")
-        
-        location_keywords = ["gần", "cách", "nearby", "gần đây", "quanh", "xung quanh"]
-        if any(kw in message.lower() for kw in location_keywords):
-            intents.append("location_search")
-        
-        if not intents:
-            intents.append("text_search")
-        
-        # Social intent detection
-        social_keywords = ["review", "tin hot", "trend", "tin mới", "tiktok", "facebook", "reddit", "youtube", "mạng xã hội"]
-        if any(kw in message.lower() for kw in social_keywords):
-            intents.append("social_search")
-            
-        return " + ".join(intents)
-
     def _get_tool_purpose(self, tool_name: str) -> str:
         """Get human-readable purpose for tool."""
         purposes = {
@@ -248,116 +234,116 @@ class MMCAAgent:
         }
         return purposes.get(tool_name, tool_name)
 
-    def _is_greeting_or_simple_query(self, message: str) -> bool:
-        """
-        Check if message is a simple greeting/small-talk that doesn't need tools.
-        
-        Returns True for greetings, thanks, simple acknowledgments.
-        """
-        simple_patterns = [
-            # English
-            "hello", "hi", "hey", "yo", "sup",
-            "thank", "thanks", "bye", "goodbye",
-            "ok", "okay", "yes", "no", "good", "great", "nice",
-            # Vietnamese
-            "xin chào", "chào", "chào bạn", "ê", "alo",
-            "cảm ơn", "cám ơn", "thanks", "tạm biệt", "bye",
-            "ok", "được", "tốt", "hay", "ừ", "ờ", "vâng", "dạ",
-        ]
-        msg_lower = message.lower().strip()
-        
-        # Very short messages are likely greetings
-        if len(msg_lower) < 15:
-            for pattern in simple_patterns:
-                if pattern in msg_lower:
-                    return True
-            # Also check if message is just a single word greeting
-            if msg_lower in simple_patterns:
-                return True
-        
-        return False
-
     async def _plan_tool_calls(
         self,
         message: str,
         image_url: str | None = None,
     ) -> list[ToolCall]:
         """
-        Analyze message and plan which tools to call.
+        Use LLM to analyze message and plan which tools to call.
 
         Returns list of ToolCall objects with tool_name and arguments.
-        Returns empty list for simple greetings (no tools needed).
+        Returns empty list for greetings/small-talk (LLM detects via is_greeting).
         """
-        # Early exit for greetings - no tools needed
-        if self._is_greeting_or_simple_query(message) and not image_url:
-            agent_logger.workflow_step("Greeting detected", "Skipping tools")
-            return []
-        
-        tool_calls = []
-
-        # If image is provided, always use visual search
+        # If image is provided, always use visual search (fast path)
         if image_url:
-            tool_calls.append(ToolCall(
+            return [ToolCall(
                 tool_name="retrieve_similar_visuals",
                 arguments={"image_url": image_url, "limit": 5},
-            ))
-
-        # Check for social media intent FIRST
-        social_keywords = ["review", "tin hot", "trend", "tin mới", "tiktok", "facebook", "reddit", "youtube", "mạng xã hội"]
-        if any(kw in message.lower() for kw in social_keywords):
-            # Determine freshness
-            freshness = "pw" # Default past week
-            if "tháng" in message.lower() or "month" in message.lower():
-                freshness = "pm"
+            )]
+        
+        # Use LLM to detect intent and select tools
+        intent_prompt = build_intent_prompt(message, has_image=bool(image_url))
+        
+        try:
+            intent_response = await self.llm_client.generate(
+                prompt=intent_prompt,
+                temperature=0.2,  # Low temperature for consistent JSON
+                system_instruction=INTENT_SYSTEM_PROMPT,
+            )
             
-            # Determine platforms
-            platforms = []
-            for p in ["tiktok", "facebook", "reddit", "youtube", "twitter", "instagram"]:
-                if p in message.lower():
-                    platforms.append(p)
+            agent_logger.workflow_step("LLM Intent Detection", intent_response[:200])
             
-            tool_calls.append(ToolCall(
-                tool_name="search_social_media",
-                arguments={
-                    "query": message,
-                    "limit": 5,
-                    "freshness": freshness,
-                    "platforms": platforms if platforms else None
-                }
-            ))
-
-        # Analyze message for location/proximity queries
-        location_keywords = ["gần", "cách", "nearby", "gần đây", "quanh", "xung quanh"]
-        if any(kw in message.lower() for kw in location_keywords):
-            # Extract location name from message
-            location = self._extract_location(message)
-            category = self._extract_category(message)
-
-            # Get coordinates for the location
-            coords = await self.tools.get_location_coordinates(location) if location else None
-            lat, lng = coords if coords else DANANG_CENTER
-
-            tool_calls.append(ToolCall(
-                tool_name="find_nearby_places",
-                arguments={
-                    "lat": lat,
-                    "lng": lng,
-                    "category": category,
-                    "max_distance_km": 3.0,
-                    "limit": 5,
-                },
-            ))
-
-        # For general queries without location keywords AND NO SOCIAL INTENT, use text search
-        # If social search is already triggered, we might skip text search to avoid noise, 
-        # or keep it if query is mixed. For now, let's keep text search only if no other tools used.
-        if not tool_calls:
-            tool_calls.append(ToolCall(
+            # Parse JSON response
+            tool_calls = self._parse_intent_response(intent_response, message)
+            return tool_calls
+            
+        except Exception as e:
+            agent_logger.error(f"Intent detection failed: {e}", None)
+            # Fallback to text search
+            return [ToolCall(
                 tool_name="retrieve_context_text",
                 arguments={"query": message, "limit": 5},
-            ))
+            )]
+    
+    def _parse_intent_response(self, response: str, original_message: str) -> list[ToolCall]:
+        """Parse LLM intent detection response into ToolCall list."""
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if json_match:
+                response = json_match.group(1)
+            
+            # Find JSON object
+            json_start = response.find('{')
+            json_end = response.rfind('}')
+            if json_start != -1 and json_end != -1:
+                response = response[json_start:json_end + 1]
+            
+            data = json.loads(response)
+            
+            # Check if greeting
+            if data.get("is_greeting", False):
+                return []
+            
+            # Parse tools
+            tools = data.get("tools", [])
+            tool_calls = []
+            
+            for tool in tools:
+                name = tool.get("name")
+                arguments = tool.get("arguments", {})
+                
+                # Validate tool name
+                valid_tools = ["retrieve_context_text", "find_nearby_places", 
+                              "search_social_media", "retrieve_similar_visuals"]
+                if name not in valid_tools:
+                    continue
+                
+                # Ensure required arguments
+                if name == "retrieve_context_text":
+                    arguments.setdefault("query", original_message)
+                    arguments.setdefault("limit", 5)
+                elif name == "find_nearby_places":
+                    # Need to geocode location if provided
+                    location = arguments.get("location", "")
+                    arguments.setdefault("max_distance_km", 3.0)
+                    arguments.setdefault("limit", 5)
+                    # Will handle geocoding in execute step
+                elif name == "search_social_media":
+                    arguments.setdefault("query", original_message)
+                    arguments.setdefault("limit", 5)
+                    arguments.setdefault("freshness", "pw")
+                
+                tool_calls.append(ToolCall(tool_name=name, arguments=arguments))
+            
+            # If no tools selected, default to text search
+            if not tool_calls:
+                tool_calls.append(ToolCall(
+                    tool_name="retrieve_context_text",
+                    arguments={"query": original_message, "limit": 5},
+                ))
+            
+            return tool_calls
+            
+        except (json.JSONDecodeError, KeyError) as e:
+            agent_logger.error(f"Failed to parse intent JSON: {e}", None)
+            # Fallback to text search
+            return [ToolCall(
+                tool_name="retrieve_context_text",
+                arguments={"query": original_message, "limit": 5},
+            )]
 
-        return tool_calls
 
     async def _execute_tool(
         self,
@@ -405,9 +391,25 @@ class MMCAAgent:
                 ]
 
             elif tool_call.tool_name == "find_nearby_places":
+                # Handle geocoding if location name provided instead of lat/lng
+                lat = tool_call.arguments.get("lat")
+                lng = tool_call.arguments.get("lng")
+                
+                if lat is None or lng is None:
+                    # Try to geocode from location name
+                    location = tool_call.arguments.get("location", "")
+                    if location:
+                        coords = await self.tools.get_location_coordinates(location)
+                        if coords:
+                            lat, lng = coords
+                        else:
+                            lat, lng = DANANG_CENTER
+                    else:
+                        lat, lng = DANANG_CENTER
+                
                 results = await self.tools.find_nearby_places(
-                    lat=tool_call.arguments.get("lat", DANANG_CENTER[0]),
-                    lng=tool_call.arguments.get("lng", DANANG_CENTER[1]),
+                    lat=lat,
+                    lng=lng,
                     max_distance_km=tool_call.arguments.get("max_distance_km", 5.0),
                     category=tool_call.arguments.get("category"),
                     limit=tool_call.arguments.get("limit", 10),

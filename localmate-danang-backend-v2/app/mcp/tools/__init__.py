@@ -9,10 +9,7 @@ Tools:
 from app.mcp.tools.text_tool import (
     TextSearchResult,
     retrieve_context_text,
-    detect_category_intent,
     TOOL_DEFINITION as TEXT_TOOL_DEFINITION,
-    CATEGORY_KEYWORDS,
-    CATEGORY_TO_DB,
 )
 from app.mcp.tools.visual_tool import (
     ImageSearchResult,
@@ -111,7 +108,7 @@ mcp_tools = MCPTools()
 
 
 # Re-export for convenience
-__all__ = [
+_all_ = [
     "MCPTools",
     "mcp_tools",
     "TextSearchResult",

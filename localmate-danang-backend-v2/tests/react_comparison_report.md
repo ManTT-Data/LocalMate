@@ -1,6 +1,6 @@
 # LocalMate Agent Comprehensive Test Report
 
-**Generated:** 2025-12-19 23:33:08  
+**Generated:** 2025-12-20 06:39:19  
 **Provider:** Google  
 **Model:** gemini-2.5-flash
 
@@ -11,7 +11,7 @@
 | Metric | Single Mode | ReAct Mode |
 |--------|:-----------:|:----------:|
 | Success Rate | 5/5 | 5/5 |
-| Avg Duration | 7690ms | 9107ms |
+| Avg Duration | 11740ms | 3264ms |
 | Unique Tools | 3 | 3 |
 
 ### Tools Covered
@@ -33,7 +33,7 @@
 | 2 | Text search - Semantic search  | retrieve_context_text | retrieve_context_text | ✅ Match/✅ Match |
 | 3 | Location search - Neo4j spatia | find_nearby_places | get_location_coordinates, find_nearby_places | ✅ Match/⚠️ Extra tools |
 | 4 | Social search - Brave API news | search_social_media | ∅ (none) | ✅ Match/❌ Mismatch |
-| 5 | Complex query - Multiple tools | search_social_media, find_nearby_places | get_location_coordinates, find_nearby_places, retrieve_context_text | ⚠️ Partial/⚠️ Extra tools |
+| 5 | Complex query - Multiple tools | find_nearby_places, retrieve_context_text | ∅ (none) | ✅ Match/❌ Mismatch |
 
 ---
 
@@ -46,12 +46,12 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 987ms | None | 0 |
-| ReAct | ✅ | 1277ms | None | 0 |
+| Single | ✅ | 2855ms | None | 0 |
+| ReAct | ✅ | 1598ms | None | 0 |
 
-**Single Response:** Chào bạn! 😊 LocalMate đây. Có gì mình giúp được bạn hôm nay không?...
+**Single Response:** Chào bạn! Mình là LocalMate, rất vui được hỗ trợ bạn khám phá Đà Nẵng. 😊...
 
-**ReAct Response:** Chào bạn! Tôi là trợ lý du lịch thông minh cho Đà Nẵng. Bạn đang tìm kiếm thông tin gì về Đà Nẵng vậy? Hãy cho tôi biết nhé!...
+**ReAct Response:** Chào bạn! Mình là trợ lý du lịch thông minh của Đà Nẵng, rất vui được hỗ trợ bạn. Bạn đang muốn tìm kiếm thông tin gì về Đà Nẵng ạ? Hãy cho mình biết ...
 
 ---
 
@@ -62,16 +62,16 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 9393ms | retrieve_context_text | 3 |
-| ReAct | ✅ | 6806ms | retrieve_context_text | 1 |
+| Single | ✅ | 14155ms | retrieve_context_text | 3 |
+| ReAct | ✅ | 5694ms | retrieve_context_text | 2 |
 
-**Single Response:** Chào bạn! 😊 Đà Nẵng có rất nhiều quán cafe với view đẹp để bạn ghé thăm. Dựa trên yêu cầu của bạn, mình gợi ý 3 quán này nhé:
+**Single Response:** Chào bạn! Với yêu cầu tìm quán cà phê view đẹp ở Đà Nẵng, mình có một vài gợi ý tuyệt vời dành cho bạn đây:
 
-1.  **Nhớ Một Người** (...
+1.  **Nhớ Một Người**: Quán này có rating...
 
-**ReAct Response:** Chào bạn! Để tìm quán cà phê có view đẹp ở Đà Nẵng, tôi có một gợi ý nổi bật dành cho bạn đây:
+**ReAct Response:** Chào bạn! Mình đã tìm thấy một vài quán cà phê có thể có "view đẹp" ở Đà Nẵng để bạn tham khảo đây: 
 
-**FIRGUN CORNER COFFEE**: Quán này được biết đến với k...
+1.  **FIRGUN CORNER COFFEE**: Với rating 4.5/5, ...
 
 ---
 
@@ -82,16 +82,16 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 7216ms | find_nearby_places | 3 |
-| ReAct | ✅ | 6542ms | get_location_coordinates, find_nearby_places | 3 |
+| Single | ✅ | 19588ms | find_nearby_places | 3 |
+| ReAct | ✅ | 7989ms | get_location_coordinates, find_nearby_places | 3 |
 
-**Single Response:** Chào bạn, gần khu vực Cầu Rồng có một số nhà hàng rất đáng thử đây:
+**Single Response:** Chào bạn! Mình đã tìm thấy một vài nhà hàng ngon gần Cầu Rồng cho bạn đây:
 
-1.  **Pizza 4P's Hoang Van Thu**: Chỉ cách Cầu Rồng khoảng 0.57 km, nhà hàng pizz...
+1.  **Cơm Gà Lan**: Nổi tiếng với các món cơm gà, quán này có rating khá c...
 
-**ReAct Response:** Chào bạn! Gần Cầu Rồng có rất nhiều nhà hàng ngon để bạn lựa chọn. Dưới đây là top 3 gợi ý nổi bật mà bạn có thể tham khảo nhé:
+**ReAct Response:** Chào bạn! Gần Cầu Rồng có khá nhiều nhà hàng ngon để bạn lựa chọn đây:
 
-1.  **Pizza 4P's Hoan...
+1.  **Pizza 4P's Hoang Van Thu**: Quán pizza nổi tiếng này chỉ cách Cầu Rồng k...
 
 ---
 
@@ -102,12 +102,12 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 11092ms | search_social_media | 0 |
-| ReAct | ✅ | 11059ms | None | 0 |
+| Single | ✅ | 7301ms | search_social_media | 0 |
+| ReAct | ✅ | 507ms | None | 0 |
 
-**Single Response:** Chào bạn, để tìm các quán ăn đang hot trên TikTok ở Đà Nẵng, tôi cần thực hiện tìm kiếm trên các nền tảng mạng xã hội. Hiện tại, tôi chưa có kết quả c...
+**Single Response:** Chào bạn! Hiện tại mình chưa có thông tin cụ thể về các quán ăn đang hot trên TikTok ở Đà Nẵng ngay lúc này. Bạn có muốn mình thử tìm kiếm các quán ăn...
 
-**ReAct Response:** Chào bạn! Hiện tại tôi chưa có thông tin cụ thể về các quán ăn "hot trên TikTok" ở Đà Nẵng. Tuy nhiên, tôi có thể gợi ý cho bạn những nhà hàng được đá...
+**ReAct Response:** Xin lỗi, đã xảy ra lỗi: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billin...
 
 ---
 
@@ -118,16 +118,14 @@
 
 | Mode | Status | Duration | Tools Used | Places |
 |------|--------|----------|------------|--------|
-| Single | ✅ | 9760ms | search_social_media, find_nearby_places | 3 |
-| ReAct | ✅ | 19850ms | get_location_coordinates, find_nearby_places, retrieve_context_text | 3 |
+| Single | ✅ | 14802ms | find_nearby_places, retrieve_context_text | 3 |
+| ReAct | ✅ | 531ms | None | 0 |
 
-**Single Response:** Chào bạn, gần biển Mỹ Khê có một vài quán cà phê với không gian đẹp và được đánh giá tốt mà bạn có thể tham khảo đây:
+**Single Response:** Chào bạn! Mình đã tìm thấy một vài quán cà phê có không gian đẹp và được đánh giá tốt, lại còn gần biển Mỹ Khê nữa đây:
 
-1.  **Sound cafe**: Chỉ cách bi...
+1.  **VUN**: Quán này chỉ các...
 
-**ReAct Response:** Chào bạn! Để tìm quán cà phê có không gian đẹp và review tốt gần biển Mỹ Khê, tôi có một vài gợi ý tuyệt vời cho bạn đây:
-
-1.  **XLIII Specialty Coffe...
+**ReAct Response:** Xin lỗi, đã xảy ra lỗi: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billin...
 
 ---
 

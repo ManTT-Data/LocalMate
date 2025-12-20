@@ -27,22 +27,9 @@ class TextSearchResult:
     source_text: str = ""
     content_type: str = ""
 
-# Category constants - imported from centralized prompts
-from app.shared.prompts import CATEGORY_KEYWORDS, CATEGORY_TO_DB
-
 
 # Tool definition for agent - imported from centralized prompts
 from app.shared.prompts import RETRIEVE_CONTEXT_TEXT_TOOL as TOOL_DEFINITION
-
-
-def detect_category_intent(query: str) -> Optional[str]:
-    """Detect if query is asking for specific category."""
-    query_lower = query.lower()
-
-    for category, keywords in CATEGORY_KEYWORDS.items():
-        if any(kw in query_lower for kw in keywords):
-            return category
-    return None
 
 
 async def retrieve_context_text(
@@ -71,9 +58,6 @@ async def retrieve_context_text(
     # Convert to PostgreSQL vector format
     embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
 
-    # Detect category intent for boosting
-    category_intent = detect_category_intent(query)
-    category_filter = CATEGORY_TO_DB.get(category_intent, []) if category_intent else []
 
     # Search with JOIN to places_metadata
     # Note: Use format string for embedding since SQLAlchemy param binding 
@@ -102,16 +86,12 @@ async def retrieve_context_text(
 
     rows = results.fetchall()
 
-    # Process and score results with category boosting
+    # Process and score results with rating boost
     scored_results = []
     for r in rows:
         score = float(r.similarity)
         
-        # Category boost (15%)
-        if category_filter and r.category in category_filter:
-            score += 0.15
-        
-        # Rating boost (5% for >= 4.5)
+        # Rating boost (5% for >= 4.5, 2% for >= 4.0)
         if r.rating and r.rating >= 4.5:
             score += 0.05
         elif r.rating and r.rating >= 4.0:

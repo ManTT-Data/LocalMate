@@ -1,5 +1,6 @@
 """Trip Planner Router - API endpoints for plan management."""
 
+import time
 from fastapi import APIRouter, HTTPException, Query
 
 from app.planner.models import (
@@ -12,8 +13,14 @@ from app.planner.models import (
     ReplaceRequest,
     OptimizeResponse,
     PlanResponse,
+    GetPlanRequest,
+    GetPlanResponse,
+    SmartPlanResponse,
+    DayPlanResponse,
+    PlaceDetailResponse,
 )
 from app.planner.service import planner_service
+from app.planner.smart_plan import smart_plan_service
 
 
 router = APIRouter(prefix="/planner", tags=["Trip Planner"])
@@ -251,3 +258,120 @@ async def delete_plan(
         raise HTTPException(status_code=404, detail="Plan not found")
     
     return {"status": "success", "message": f"Deleted plan {plan_id}"}
+
+
+# =============================================================================
+# SMART PLAN ENDPOINT
+# =============================================================================
+
+@router.post(
+    "/{plan_id}/get-plan",
+    response_model=GetPlanResponse,
+    summary="Generate Smart Plan",
+    description="""
+Generates an optimized, enriched plan with:
+- Social media research for each place
+- Optimal timing (e.g., Dragon Bridge at 21h for fire show)
+- Tips and highlights per place
+- Route optimization
+""",
+)
+async def get_smart_plan(
+    plan_id: str,
+    request: GetPlanRequest = GetPlanRequest(),
+    user_id: str = Query(default="anonymous", description="User ID"),
+) -> GetPlanResponse:
+    """
+    Generate a smart, enriched travel plan.
+    
+    Uses Social Media Tool to research each place and LLM to optimize
+    timing based on Da Nang local knowledge.
+    """
+    start_time = time.time()
+    
+    # Get the plan
+    plan = planner_service.get_plan(user_id, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    if len(plan.items) == 0:
+        raise HTTPException(status_code=400, detail="Plan is empty. Add places first.")
+    
+    # Convert PlanItems to dict format for smart plan service
+    places = [
+        {
+            "place_id": item.place_id,
+            "name": item.name,
+            "category": item.category,
+            "lat": item.lat,
+            "lng": item.lng,
+            "rating": item.rating,
+        }
+        for item in plan.items
+    ]
+    
+    # Generate smart plan
+    smart_plan = await smart_plan_service.generate_smart_plan(
+        places=places,
+        title=plan.name,
+        itinerary_id=plan_id,
+        total_days=1,  # Planner is single-day by default
+        include_social_research=request.include_social_research,
+        freshness=request.freshness,
+    )
+    
+    # Count social research results
+    research_count = sum(
+        len(p.social_mentions)
+        for day in smart_plan.days
+        for p in day.places
+    )
+    
+    generation_time = (time.time() - start_time) * 1000
+    
+    # Convert to Pydantic response
+    days_response = []
+    for day in smart_plan.days:
+        places_response = [
+            PlaceDetailResponse(
+                place_id=p.place_id,
+                name=p.name,
+                category=p.category,
+                lat=p.lat,
+                lng=p.lng,
+                recommended_time=p.recommended_time,
+                suggested_duration_min=p.suggested_duration_min,
+                tips=p.tips,
+                highlights=p.highlights,
+                social_mentions=p.social_mentions,
+                order=p.order,
+            )
+            for p in day.places
+        ]
+        days_response.append(
+            DayPlanResponse(
+                day_index=day.day_index,
+                date=str(day.date) if day.date else None,
+                places=places_response,
+                day_summary=day.day_summary,
+                day_distance_km=day.day_distance_km,
+            )
+        )
+    
+    plan_response = SmartPlanResponse(
+        itinerary_id=smart_plan.itinerary_id,
+        title=smart_plan.title,
+        total_days=smart_plan.total_days,
+        days=days_response,
+        summary=smart_plan.summary,
+        total_distance_km=smart_plan.total_distance_km,
+        estimated_total_duration_min=smart_plan.estimated_total_duration_min,
+        generated_at=smart_plan.generated_at,
+    )
+    
+    return GetPlanResponse(
+        plan=plan_response,
+        research_count=research_count,
+        generation_time_ms=round(generation_time, 2),
+        message=f"Smart plan generated with {research_count} social mentions",
+    )
